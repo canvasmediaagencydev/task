@@ -21,6 +21,16 @@ export interface User {
   is_active: boolean;
 }
 
+export interface TeamMember extends User {
+  role?: string;
+  department?: string;
+  location?: string;
+  availability?: string;
+  utilization?: number;
+  current_projects?: number;
+  focus_areas?: string[];
+}
+
 export interface Client {
   id: string;
   name: string;
@@ -28,6 +38,14 @@ export interface Client {
   email?: string;
   phone?: string;
   company_name?: string;
+  notes?: string;
+}
+
+export interface ClientSummary extends Client {
+  project_count?: number;
+  open_tasks?: number;
+  last_project?: string;
+  last_activity?: string;
 }
 
 export interface Project {

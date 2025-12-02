@@ -1,4 +1,4 @@
-import { User, Client, Project, Task, Activity, DashboardStats, TaskStatusCount } from './types';
+import { User, Client, Project, Task, Activity, DashboardStats, TaskStatusCount, TeamMember } from './types';
 
 // Mock Users
 export const mockUsers: User[] = [
@@ -32,6 +32,77 @@ export const mockUsers: User[] = [
   },
 ];
 
+export const mockTeamMembers: TeamMember[] = [
+  {
+    ...mockUsers[0],
+    role: 'Project Lead',
+    department: 'Accounts',
+    location: 'Bangkok',
+    availability: '3 hrs free this week',
+    utilization: 72,
+    current_projects: 3,
+    focus_areas: ['Strategy', 'Client Ops'],
+  },
+  {
+    ...mockUsers[1],
+    role: 'Art Director',
+    department: 'Creative',
+    location: 'Bangkok',
+    availability: 'Heads down on campaign',
+    utilization: 88,
+    current_projects: 4,
+    focus_areas: ['Brand Systems', 'Visual Direction'],
+  },
+  {
+    ...mockUsers[2],
+    role: 'Copywriter',
+    department: 'Content',
+    location: 'Remote - Singapore',
+    availability: '2 hrs opening Thursday',
+    utilization: 64,
+    current_projects: 2,
+    focus_areas: ['Social', 'Long-form'],
+  },
+  {
+    ...mockUsers[3],
+    role: 'Motion Designer',
+    department: 'Creative',
+    location: 'Remote - Chiang Mai',
+    availability: 'On presentation prep',
+    utilization: 91,
+    current_projects: 5,
+    focus_areas: ['Animation', 'Video'],
+  },
+  {
+    id: '5',
+    email: 'priya@agency.com',
+    full_name: 'Priya Patel',
+    avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Priya',
+    is_active: true,
+    role: 'Growth Strategist',
+    department: 'Strategy',
+    location: 'Bangkok',
+    availability: 'Reviewing pitches',
+    utilization: 76,
+    current_projects: 3,
+    focus_areas: ['Demand Gen', 'Analytics'],
+  },
+  {
+    id: '6',
+    email: 'kenji@agency.com',
+    full_name: 'Kenji Tan',
+    avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Kenji',
+    is_active: true,
+    role: 'Full-stack Developer',
+    department: 'Web',
+    location: 'Remote - Tokyo',
+    availability: 'Sprints booked',
+    utilization: 85,
+    current_projects: 4,
+    focus_areas: ['Next.js', 'CMS Integrations'],
+  },
+];
+
 // Mock Clients
 export const mockClients: Client[] = [
   {
@@ -41,6 +112,7 @@ export const mockClients: Client[] = [
     email: 'robert@acme.com',
     phone: '555-0101',
     company_name: 'Acme Corp',
+    notes: 'Lead enterprise client focused on retail growth.',
   },
   {
     id: '2',
@@ -49,6 +121,7 @@ export const mockClients: Client[] = [
     email: 'lisa@techstart.com',
     phone: '555-0102',
     company_name: 'TechStart',
+    notes: 'Scale-up working on product launch for APAC.',
   },
   {
     id: '3',
@@ -57,6 +130,7 @@ export const mockClients: Client[] = [
     email: 'david@globalsolutions.com',
     phone: '555-0103',
     company_name: 'Global Solutions Ltd',
+    notes: 'B2B consultancy retained for quarterly campaigns.',
   },
 ];
 
