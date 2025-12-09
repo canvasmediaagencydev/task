@@ -122,6 +122,95 @@ export type Database = {
           id: string
         }
       }
+      roles: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+      }
+      permissions: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          resource: string
+          action: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          resource: string
+          action: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          resource?: string
+          action?: string
+          created_at?: string | null
+        }
+      }
+      role_permissions: {
+        Row: {
+          id: string
+          role_id: string | null
+          permission_id: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          role_id?: string | null
+          permission_id?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          role_id?: string | null
+          permission_id?: string | null
+          created_at?: string | null
+        }
+      }
+      user_roles: {
+        Row: {
+          id: string
+          user_id: string | null
+          role_id: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          role_id?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          role_id?: string | null
+          created_at?: string | null
+        }
+      }
     }
     Views: {}
     Functions: {}

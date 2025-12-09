@@ -83,6 +83,20 @@ export async function signUp(formData: FormData) {
     if (profileError) {
       return { error: profileError.message };
     }
+
+    // Assign default role (Member) to new user
+    const { data: memberRole } = await supabase
+      .from('roles')
+      .select('id')
+      .eq('name', 'Member')
+      .single();
+
+    if (memberRole) {
+      await supabase.from('user_roles').insert({
+        user_id: data.user.id,
+        role_id: memberRole.id,
+      });
+    }
   }
 
   revalidatePath('/', 'layout');

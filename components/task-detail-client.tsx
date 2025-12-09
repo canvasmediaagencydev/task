@@ -43,76 +43,36 @@ import {
   Pencil,
   Trash2,
   UploadCloud,
-  Paperclip,
-  Download,
-  ExternalLink,
   MessageSquare,
   Send,
-  Link2,
-  FileText,
-  Folder,
   UserRound,
+  ExternalLink,
+  FileText,
+  Link2,
+  Trash,
 } from 'lucide-react';
+import { AddLinkDialog } from '@/components/add-link-dialog';
+import { deleteAttachment } from '@/app/actions/attachments';
 
 interface TaskDetailClientProps {
   task: Task;
+  attachments?: Array<{
+    id: string;
+    title: string;
+    url: string;
+    provider_type: string;
+    created_by?: any;
+  }>;
 }
 
 type ExtendedTask = Task & {
   created_by_user?: Task['created_by'];
 };
 
-// Mock attachments shown until storage is wired up
-const attachmentItems = [
-  {
-    id: 'brand-guide',
-    name: 'Brand_Guidelines.pdf',
-    size: '1.2 MB',
-    meta: 'PDF',
-    action: 'download' as const,
-    icon: 'file',
-  },
-  {
-    id: 'campaign-mockups',
-    name: 'Campaign_Mockups.fig',
-    size: '845 KB',
-    meta: 'Figma',
-    action: 'download' as const,
-    icon: 'folder',
-  },
-  {
-    id: 'miro-link',
-    name: 'Inspiration Board',
-    size: 'Miro Link',
-    meta: 'External',
-    action: 'external' as const,
-    icon: 'link',
-  },
-];
-
-// Mock activity log shown before real comments exist
-const activityItems = [
-  {
-    id: 'activity-1',
-    author: 'Jane Doe',
-    avatar: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Jane',
-    timestamp: 'Yesterday at 3:45 PM',
-    content: 'Jane changed the status from To Do to In Progress.',
-    badge: 'Status Update',
-  },
-  {
-    id: 'activity-2',
-    author: 'Olivia Chen',
-    avatar: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Olivia',
-    timestamp: 'Yesterday at 11:20 AM',
-    content:
-      'Looks great! I attached a revised version of the brand guidelines with the updated logo assets. Let me know if you have any questions.',
-  },
-];
-
-export function TaskDetailClient({ task: initialTask }: TaskDetailClientProps) {
+export function TaskDetailClient({ task: initialTask, attachments = [] }: TaskDetailClientProps) {
   const router = useRouter();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [addLinkOpen, setAddLinkOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const assignee = initialTask.assignee;
@@ -203,53 +163,95 @@ export function TaskDetailClient({ task: initialTask }: TaskDetailClientProps) {
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Attachments</h2>
-                <Button variant="ghost" size="sm" className="gap-2">
-                  <Paperclip className="h-4 w-4" />
-                  Add file
+                <h2 className="text-lg font-semibold">Links & Attachments</h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => setAddLinkOpen(true)}
+                >
+                  <Link2 className="h-4 w-4" />
+                  Add link
                 </Button>
               </div>
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {attachmentItems.map((item) => {
-                  const iconMap = {
-                    file: FileText,
-                    folder: Folder,
-                    link: Link2,
-                  } as const;
-                  const Icon = iconMap[item.icon];
+              {attachments.length === 0 ? (
+                <div className="rounded-2xl border border-dashed bg-background/50 p-8 text-center">
+                  <Link2 className="mx-auto h-8 w-8 text-muted-foreground/50" />
+                  <p className="mt-2 text-sm text-muted-foreground">No links yet</p>
+                  <p className="text-xs text-muted-foreground">
+                    Add links to Google Drive, Figma, or other resources
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {attachments.map((attachment) => {
+                    const getIcon = (type: string) => {
+                      if (type.includes('google')) return FileText;
+                      if (type === 'figma' || type === 'canva') return FileText;
+                      return Link2;
+                    };
+                    const Icon = getIcon(attachment.provider_type);
 
-                  return (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between rounded-2xl border bg-background/70 p-4"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="rounded-2xl bg-primary/10 p-3 text-primary">
-                          <Icon className="h-5 w-5" />
+                    return (
+                      <div
+                        key={attachment.id}
+                        className="flex items-center justify-between rounded-2xl border bg-background/70 p-4 hover:bg-background"
+                      >
+                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                          <div className="rounded-2xl bg-primary/10 p-3 text-primary flex-shrink-0">
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{attachment.title}</p>
+                            <p className="text-xs text-muted-foreground capitalize">
+                              {attachment.provider_type.replace('_', ' ')}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium">{item.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {item.meta} · {item.size}
-                          </p>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground"
+                            asChild
+                          >
+                            <a
+                              href={attachment.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label="Open link"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </a>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground hover:text-destructive"
+                            onClick={async () => {
+                              if (confirm('Remove this link?')) {
+                                const result = await deleteAttachment(
+                                  attachment.id,
+                                  'task',
+                                  initialTask.id
+                                );
+                                if (result.success) {
+                                  toast.success('Link removed');
+                                  router.refresh();
+                                } else {
+                                  toast.error('Failed to remove link');
+                                }
+                              }
+                            }}
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-muted-foreground"
-                        aria-label={item.action === 'download' ? 'Download' : 'Open link'}
-                      >
-                        {item.action === 'download' ? (
-                          <Download className="h-4 w-4" />
-                        ) : (
-                          <ExternalLink className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <div className="space-y-4">
@@ -284,35 +286,11 @@ export function TaskDetailClient({ task: initialTask }: TaskDetailClientProps) {
                 </div>
 
                 <div className="space-y-6">
-                  {activityItems.map((activity) => (
-                    <div key={activity.id} className="flex gap-4">
-                      <Avatar>
-                        <AvatarImage src={activity.avatar} alt={activity.author} />
-                        <AvatarFallback>
-                          {activity.author
-                            .split(' ')
-                            .map((n) => n[0])
-                            .join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 rounded-2xl border bg-background/70 p-4">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-medium">{activity.author}</p>
-                            <p className="text-xs text-muted-foreground">{activity.timestamp}</p>
-                          </div>
-                          {activity.badge && (
-                            <Badge variant="outline" className="rounded-full text-xs">
-                              {activity.badge}
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                          {activity.content}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                  <div className="text-center py-8 text-muted-foreground">
+                    <MessageSquare className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
+                    <p className="text-sm">No comments yet</p>
+                    <p className="text-xs">Be the first to comment on this task</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -429,6 +407,14 @@ export function TaskDetailClient({ task: initialTask }: TaskDetailClientProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AddLinkDialog
+        open={addLinkOpen}
+        onOpenChange={setAddLinkOpen}
+        entityType="task"
+        entityId={initialTask.id}
+        onSuccess={() => router.refresh()}
+      />
     </div>
   );
 }

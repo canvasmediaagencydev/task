@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { ClientSummary } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,10 +12,10 @@ import { Building2, Mail, Phone, UserPlus, Search, ClipboardList } from 'lucide-
 
 interface ClientsPageClientProps {
   clients: ClientSummary[];
-  isMock?: boolean;
 }
 
-export function ClientsPageClient({ clients, isMock }: ClientsPageClientProps) {
+export function ClientsPageClient({ clients }: ClientsPageClientProps) {
+  const router = useRouter();
   const stats = useMemo(() => {
     const total = clients.length;
     const retained = clients.filter((client) => (client.project_count || 0) > 1).length;
@@ -36,16 +37,13 @@ export function ClientsPageClient({ clients, isMock }: ClientsPageClientProps) {
           <p className="text-sm uppercase tracking-wide text-muted-foreground">Accounts</p>
           <h1 className="text-3xl font-bold">Clients</h1>
           <p className="text-muted-foreground">Track key contacts, conversations, and live engagements.</p>
-          {isMock && (
-            <p className="text-xs text-muted-foreground">Mock client records shown until Supabase data is connected.</p>
-          )}
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" className="gap-2">
             <ClipboardList className="h-4 w-4" />
             Export list
           </Button>
-          <Button className="gap-2">
+          <Button className="gap-2" onClick={() => router.push('/dashboard/clients/new')}>
             <UserPlus className="h-4 w-4" />
             New client
           </Button>
@@ -65,10 +63,9 @@ export function ClientsPageClient({ clients, isMock }: ClientsPageClientProps) {
               <CardTitle className="text-xl">Client directory</CardTitle>
               <div className="relative w-full max-w-sm">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input placeholder="Search clients (UI only)" className="pl-9" disabled />
+                <Input placeholder="Search clients..." className="pl-9" disabled />
               </div>
             </div>
-            <p className="text-sm text-muted-foreground">Filters are disabled until real data wiring is ready.</p>
           </CardHeader>
           <CardContent>
             {clients.length ? (
@@ -84,7 +81,11 @@ export function ClientsPageClient({ clients, isMock }: ClientsPageClientProps) {
                 </TableHeader>
                 <TableBody>
                   {clients.map((client) => (
-                    <TableRow key={client.id}>
+                    <TableRow
+                      key={client.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => router.push(`/dashboard/clients/${client.id}`)}
+                    >
                       <TableCell>
                         <div className="space-y-1">
                           <p className="font-medium">{client.company_name || client.name}</p>
@@ -108,10 +109,7 @@ export function ClientsPageClient({ clients, isMock }: ClientsPageClientProps) {
         <div className="space-y-6">
           <Card className="rounded-3xl border bg-card/80 shadow-sm">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Key contacts</CardTitle>
-                <Badge variant="secondary" className="rounded-full">Mock</Badge>
-              </div>
+              <CardTitle className="text-lg">Key contacts</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {highlightedClients.map((client) => (

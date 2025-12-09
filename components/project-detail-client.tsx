@@ -28,18 +28,17 @@ import {
 } from 'lucide-react';
 
 interface ProjectDetailClientProps {
-  project: Project;
-  tasks: Task[];
-  isMock?: boolean;
+  project: any;
+  tasks: any[];
 }
 
-const statusStyles: Record<Project['status'], string> = {
+const statusStyles: Record<string, string> = {
   active: 'bg-emerald-500/10 text-emerald-500',
   on_hold: 'bg-amber-500/10 text-amber-500',
   done: 'bg-blue-500/10 text-blue-500',
 };
 
-export function ProjectDetailClient({ project, tasks, isMock }: ProjectDetailClientProps) {
+export function ProjectDetailClient({ project, tasks }: ProjectDetailClientProps) {
   const router = useRouter();
 
   const stats = useMemo(() => {
@@ -57,7 +56,7 @@ export function ProjectDetailClient({ project, tasks, isMock }: ProjectDetailCli
     };
   }, [tasks]);
 
-  const handleViewTask = (task: Task) => {
+  const handleViewTask = (task: any) => {
     router.push(`/dashboard/tasks/${task.id}`);
   };
 
@@ -98,11 +97,6 @@ export function ProjectDetailClient({ project, tasks, isMock }: ProjectDetailCli
                 {project.sales_person?.full_name || project.ae?.full_name || 'Unassigned'}
               </p>
             </div>
-            {isMock && (
-              <p className="text-xs text-muted-foreground">
-                Mock project preview. Replace with Supabase data once available.
-              </p>
-            )}
           </div>
           <div className="flex flex-col items-end gap-3 text-sm text-muted-foreground">
             <Badge className={cn('rounded-full px-4 py-1 text-xs capitalize', statusStyles[project.status])}>
@@ -322,7 +316,6 @@ export function ProjectDetailClient({ project, tasks, isMock }: ProjectDetailCli
                   <p className="text-xs uppercase text-muted-foreground">{member.label}</p>
                   <p className="font-medium">{member.value}</p>
                   <p className="text-muted-foreground">{member.email}</p>
-                  <p className="text-[11px] text-muted-foreground">*Mock entry until team data exists.</p>
                 </div>
               ))}
             </CardContent>
@@ -350,7 +343,7 @@ export function ProjectDetailClient({ project, tasks, isMock }: ProjectDetailCli
                 >
                   <span className="flex items-center gap-3">
                     <item.icon className="h-4 w-4 text-muted-foreground" />
-                    {item.label} <span className="text-[11px] text-muted-foreground">*Mock file</span>
+                    {item.label}
                   </span>
                   <Link2 className="h-4 w-4 text-muted-foreground" />
                 </button>

@@ -1,12 +1,7 @@
 import { Project, Task } from '@/lib/types';
-import { mockProjects, mockTasks } from '@/lib/mock-data';
 import { createClient } from '@/lib/supabase-server';
 import { fetchTasks } from '@/lib/api';
 import { Database } from '@/lib/database.types';
-
-const hasSupabaseEnv =
-  Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
-  Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
 type SupabaseProjectRow = Database['public']['Tables']['projects']['Row'] & {
   client?: {
@@ -53,54 +48,36 @@ function mapProject(row: SupabaseProjectRow): Project {
 export async function fetchProjectsAndTasks(): Promise<{
   projects: Project[];
   tasks: Task[];
-  isMock: boolean;
 }> {
-  if (!hasSupabaseEnv) {
-    // Mock fallback until Supabase is configured
-    return {
-      projects: mockProjects,
-      tasks: mockTasks,
-      isMock: true,
-    };
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('projects')
+    .select(`
+      *,
+      client:clients(*),
+      sales_person:users!projects_sales_person_id_fkey(*),
+      ae:users!projects_ae_id_fkey(*)
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Failed to fetch projects:', error);
+    throw error;
   }
 
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from('projects')
-      .select(`
-        *,
-        client:clients(*),
-        sales_person:users!projects_sales_person_id_fkey(*),
-        ae:users!projects_ae_id_fkey(*)
-      `)
-      .order('created_at', { ascending: false });
+  const projects = (data || []).map(mapProject);
+  const tasks = await fetchTasks();
 
-    if (error) {
-      throw error;
-    }
-
-    const projects = (data || []).map(mapProject);
-    const tasks = await fetchTasks();
-
-    return { projects, tasks, isMock: false };
-  } catch (error) {
-    console.error('Failed to fetch projects, falling back to mock data', error);
-    // Mock fallback when Supabase query fails locally
-    return {
-      projects: mockProjects,
-      tasks: mockTasks,
-      isMock: true,
-    };
-  }
+  return { projects, tasks };
 }
 
 export async function fetchProjectDetail(projectId: string) {
-  const { projects, tasks, isMock } = await fetchProjectsAndTasks();
+  const { projects, tasks } = await fetchProjectsAndTasks();
   const project = projects.find((p) => p.id === projectId);
   const projectTasks = project
     ? tasks.filter((task) => task.project?.id === project.id)
     : [];
 
-  return { project, tasks: projectTasks, isMock };
+  return { project, tasks: projectTasks };
 }

@@ -9,10 +9,9 @@ import { ProjectsTable } from '@/components/projects-table';
 interface ProjectsPageClientProps {
   projects: Project[];
   tasks: Task[];
-  isMock?: boolean;
 }
 
-export function ProjectsPageClient({ projects, tasks, isMock }: ProjectsPageClientProps) {
+export function ProjectsPageClient({ projects, tasks }: ProjectsPageClientProps) {
   const router = useRouter();
 
   return (
@@ -23,18 +22,13 @@ export function ProjectsPageClient({ projects, tasks, isMock }: ProjectsPageClie
           <p className="text-muted-foreground">
             Track project health, owners, and delivery status across every engagement.
           </p>
-          {isMock && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Showing mock project data until Supabase is wired up.
-            </p>
-          )}
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => router.push('/dashboard/tasks/new?type=project')}>
+          <Button onClick={() => router.push('/dashboard/projects/new')}>
             <Plus className="mr-2 h-4 w-4" />
-            Add New Project
+            New Project
           </Button>
-          <Button onClick={() => router.push('/dashboard/tasks/new')}>
+          <Button variant="outline" onClick={() => router.push('/dashboard/tasks/new')}>
             <Plus className="mr-2 h-4 w-4" />
             New Task
           </Button>

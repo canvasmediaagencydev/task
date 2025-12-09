@@ -1,25 +1,36 @@
 import { TeamMember } from '@/lib/types';
-import { mockTeamMembers } from '@/lib/mock-data';
 import { createClient } from '@/lib/supabase-server';
 
-const hasSupabaseEnv =
-  Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
-  Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+export async function fetchTeamMembers(): Promise<{ team: TeamMember[] }> {
+  const supabase = await createClient();
 
-export async function fetchTeamMembers(): Promise<{ team: TeamMember[]; isMock: boolean }> {
-  if (!hasSupabaseEnv) {
-    return { team: mockTeamMembers, isMock: true };
+  const { data, error } = await supabase
+    .from('users')
+    .select(`
+      *,
+      assigned_tasks:tasks!tasks_assignee_id_fkey(id, status, project_id),
+      reviewing_tasks:tasks!tasks_reviewer_id_fkey(id, status)
+    `)
+    .eq('is_active', true)
+    .order('full_name');
+
+  if (error) {
+    console.error('Failed to fetch team members:', error);
+    throw error;
   }
 
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.from('users').select('*').order('full_name');
+  const team: TeamMember[] = (data || []).map((member: any) => {
+    const assignedTasks = member.assigned_tasks || [];
+    const activeProjects = new Set(
+      assignedTasks
+        .filter((t: any) => t.status !== 'done' && t.project_id)
+        .map((t: any) => t.project_id)
+    ).size;
 
-    if (error) {
-      throw error;
-    }
+    const totalTasks = assignedTasks.length + (member.reviewing_tasks?.length || 0);
+    const utilization = totalTasks > 0 ? Math.min(100, Math.round((totalTasks / 10) * 100)) : 0;
 
-    const team: TeamMember[] = (data || []).map((member) => ({
+    return {
       id: member.id,
       email: member.email,
       full_name: member.full_name,
@@ -28,15 +39,12 @@ export async function fetchTeamMembers(): Promise<{ team: TeamMember[]; isMock: 
       role: 'Team Member',
       department: 'General',
       location: 'Bangkok',
-      availability: 'Schedule syncing soon',
-      utilization: 68,
-      current_projects: 2,
-      focus_areas: ['Campaign Ops'],
-    }));
+      availability: activeProjects > 0 ? `${activeProjects} active projects` : 'Available',
+      utilization,
+      current_projects: activeProjects,
+      focus_areas: assignedTasks.length > 0 ? ['Campaign Ops'] : [],
+    };
+  });
 
-    return { team, isMock: false };
-  } catch (error) {
-    console.error('Failed to fetch team members, falling back to mock data', error);
-    return { team: mockTeamMembers, isMock: true };
-  }
+  return { team };
 }

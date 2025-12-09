@@ -3,8 +3,11 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase-server';
 import { TaskStatus, TaskPriority, TaskType } from '@/lib/types';
+import { requirePermission } from '@/lib/rbac';
 
 export async function updateTaskStatus(taskId: string, status: TaskStatus) {
+  await requirePermission('tasks:update');
+
   const supabase = await createClient();
 
   const { error } = await supabase
@@ -34,6 +37,8 @@ export async function createTask(data: {
   priority: TaskPriority;
   due_date?: string | null;
 }) {
+  await requirePermission('tasks:create');
+
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -72,6 +77,8 @@ export async function updateTask(taskId: string, data: {
   priority?: TaskPriority;
   due_date?: string | null;
 }) {
+  await requirePermission('tasks:update');
+
   const supabase = await createClient();
 
   const updateData: any = {
@@ -95,6 +102,8 @@ export async function updateTask(taskId: string, data: {
 }
 
 export async function deleteTask(taskId: string) {
+  await requirePermission('tasks:delete');
+
   const supabase = await createClient();
 
   const { error } = await supabase
