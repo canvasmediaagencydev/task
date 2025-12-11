@@ -14,14 +14,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { TaskType, TaskStatus, TaskPriority } from '@/lib/types';
+import { TaskType, TaskStatus, TaskPriority, User } from '@/lib/types';
 import { createTask } from '@/app/actions/tasks';
+import { UserSelect } from '@/components/user-select';
 import { toast } from 'sonner';
 import { ArrowLeft } from 'lucide-react';
 
-export function NewTaskForm() {
+interface NewTaskFormProps {
+  users: User[];
+}
+
+export function NewTaskForm({ users }: NewTaskFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [assigneeId, setAssigneeId] = useState<string>('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -47,6 +53,7 @@ export function NewTaskForm() {
         status: formData.status,
         priority: formData.priority,
         due_date: formData.due_date || null,
+        assignee_id: assigneeId || null,
       });
 
       if (result.success) {
@@ -108,10 +115,10 @@ export function NewTaskForm() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="design">Design</SelectItem>
-                  <SelectItem value="development">Development</SelectItem>
+                  <SelectItem value="graphic">Graphic</SelectItem>
+                  <SelectItem value="content">Content</SelectItem>
+                  <SelectItem value="posting">Posting</SelectItem>
                   <SelectItem value="review">Review</SelectItem>
-                  <SelectItem value="meeting">Meeting</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
@@ -171,6 +178,17 @@ export function NewTaskForm() {
                 }
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="assignee">Assignee</Label>
+            <UserSelect
+              users={users}
+              value={assigneeId}
+              onValueChange={setAssigneeId}
+              placeholder="Select assignee"
+              disabled={isPending}
+            />
           </div>
         </CardContent>
         <CardFooter className="flex justify-between">

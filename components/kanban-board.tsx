@@ -10,7 +10,6 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Task, TaskStatus } from '@/lib/types';
 import { KanbanColumn } from './kanban-column';
 import { TaskCard } from './task-card';
@@ -36,7 +35,7 @@ interface KanbanBoardProps {
 export function KanbanBoard({ tasks, onEditTask, statusFilters = [] }: KanbanBoardProps) {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [localTasks, setLocalTasks] = useState(tasks);
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   // Sync localTasks with tasks prop when filters change
   useEffect(() => {

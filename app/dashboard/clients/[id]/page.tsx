@@ -1,6 +1,17 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase-server';
 import { ClientDetailClient } from '@/components/client-detail-client';
+import type { Database } from '@/database.types';
+
+type ClientRow = Database['public']['Tables']['clients']['Row'];
+type UserRow = Database['public']['Tables']['users']['Row'];
+type PipelineStageRow = Database['public']['Tables']['pipeline_stages']['Row'];
+type ProjectRow = Database['public']['Tables']['projects']['Row'];
+type ProjectWithRelations = ProjectRow & {
+  sales_person: UserRow | null;
+  ae: UserRow | null;
+  pipeline_stage: PipelineStageRow | null;
+};
 
 export default async function ClientDetailPage({
   params,
@@ -28,8 +39,8 @@ export default async function ClientDetailPage({
     notFound();
   }
 
-  const client = clientResult.data;
-  const projects = projectsResult.data || [];
+  const client = clientResult.data as ClientRow;
+  const projects = (projectsResult.data || []) as ProjectWithRelations[];
 
   return <ClientDetailClient client={client} projects={projects} />;
 }

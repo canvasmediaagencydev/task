@@ -40,7 +40,7 @@ export function TaskDialog({ open, onOpenChange, task, onSave }: TaskDialogProps
     try {
       await onSave({
         ...formData,
-        due_date: formData.due_date ? new Date(formData.due_date).toISOString() : null,
+        due_date: formData.due_date ? new Date(formData.due_date).toISOString() : undefined,
       });
 
       toast.success(task ? 'Task updated successfully' : 'Task created successfully');
@@ -57,7 +57,7 @@ export function TaskDialog({ open, onOpenChange, task, onSave }: TaskDialogProps
           due_date: '',
         });
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to save task');
     } finally {
       setLoading(false);

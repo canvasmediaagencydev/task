@@ -6,10 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Edit, Mail, Phone, Building2, User, Calendar, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
+import type { Database } from '@/database.types';
+
+type ClientRow = Database['public']['Tables']['clients']['Row'];
+type ProjectRow = Database['public']['Tables']['projects']['Row'] & {
+  sales_person: Database['public']['Tables']['users']['Row'] | null;
+  ae: Database['public']['Tables']['users']['Row'] | null;
+  pipeline_stage: Database['public']['Tables']['pipeline_stages']['Row'] | null;
+};
 
 interface ClientDetailClientProps {
-  client: any;
-  projects: any[];
+  client: ClientRow;
+  projects: ProjectRow[];
 }
 
 export function ClientDetailClient({ client, projects }: ClientDetailClientProps) {
@@ -18,15 +26,16 @@ export function ClientDetailClient({ client, projects }: ClientDetailClientProps
   const activeProjects = projects.filter((p) => p.status === 'active');
   const completedProjects = projects.filter((p) => p.status === 'done');
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status?: string | null) => {
+    const normalizedStatus = status ?? 'active';
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       active: 'default',
       on_hold: 'secondary',
       done: 'outline',
     };
     return (
-      <Badge variant={variants[status] || 'default'}>
-        {status.replace('_', ' ').toUpperCase()}
+      <Badge variant={variants[normalizedStatus] || 'default'}>
+        {normalizedStatus.replace('_', ' ').toUpperCase()}
       </Badge>
     );
   };

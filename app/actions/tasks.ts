@@ -3,19 +3,20 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase-server';
 import { TaskStatus, TaskPriority, TaskType } from '@/lib/types';
-import { requirePermission } from '@/lib/rbac';
+import { requirePageAccess } from '@/lib/page-access';
+import type { Database } from '@/database.types';
 
 export async function updateTaskStatus(taskId: string, status: TaskStatus) {
-  await requirePermission('tasks:update');
+  await requirePageAccess('tasks');
 
-  const supabase = await createClient();
+    const supabase = await createClient();
 
-  const { error } = await supabase
-    .from('tasks')
-    .update({
-      status,
-      updated_at: new Date().toISOString()
-    })
+    const { error } = await supabase
+      .from('tasks')
+      .update({
+        status,
+        updated_at: new Date().toISOString()
+      })
     .eq('id', taskId);
 
   if (error) {
@@ -36,8 +37,9 @@ export async function createTask(data: {
   status: TaskStatus;
   priority: TaskPriority;
   due_date?: string | null;
+  assignee_id?: string | null;
 }) {
-  await requirePermission('tasks:create');
+  await requirePageAccess('tasks');
 
   const supabase = await createClient();
 
@@ -47,17 +49,18 @@ export async function createTask(data: {
     return { error: 'Unauthorized' };
   }
 
-  const { error } = await supabase
-    .from('tasks')
-    .insert({
-      title: data.title,
-      description: data.description || null,
-      type: data.type,
-      status: data.status,
-      priority: data.priority,
-      due_date: data.due_date || null,
-      created_by: user.id,
-    });
+  const insertData: Database['public']['Tables']['tasks']['Insert'] = {
+    title: data.title,
+    description: data.description || null,
+    type: data.type,
+    status: data.status,
+    priority: data.priority,
+    due_date: data.due_date || null,
+    assignee_id: data.assignee_id || null,
+    created_by: user.id,
+  };
+
+  const { error } = await supabase.from('tasks').insert(insertData);
 
   if (error) {
     console.error('Error creating task:', error);
@@ -76,14 +79,15 @@ export async function updateTask(taskId: string, data: {
   status?: TaskStatus;
   priority?: TaskPriority;
   due_date?: string | null;
+  assignee_id?: string | null;
 }) {
-  await requirePermission('tasks:update');
+  await requirePageAccess('tasks');
 
   const supabase = await createClient();
 
-  const updateData: any = {
+  const updateData: Database['public']['Tables']['tasks']['Update'] = {
     ...data,
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
   };
 
   const { error } = await supabase
@@ -97,12 +101,13 @@ export async function updateTask(taskId: string, data: {
   }
 
   revalidatePath('/dashboard/tasks');
+  revalidatePath(`/dashboard/tasks/${taskId}`);
 
   return { success: true };
 }
 
 export async function deleteTask(taskId: string) {
-  await requirePermission('tasks:delete');
+  await requirePageAccess('tasks');
 
   const supabase = await createClient();
 

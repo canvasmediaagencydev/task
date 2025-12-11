@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase-server';
-import { Database } from '@/lib/database.types';
+import type { Database } from '@/database.types';
 
 type AttachmentInsert = Database['public']['Tables']['attachments']['Insert'];
 

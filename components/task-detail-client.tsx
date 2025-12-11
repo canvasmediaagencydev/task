@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Textarea } from '@/components/ui/textarea';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,9 +41,6 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
-  UploadCloud,
-  MessageSquare,
-  Send,
   UserRound,
   ExternalLink,
   FileText,
@@ -53,23 +49,24 @@ import {
 } from 'lucide-react';
 import { AddLinkDialog } from '@/components/add-link-dialog';
 import { deleteAttachment } from '@/app/actions/attachments';
+import { TaskComments, TaskComment } from '@/components/task-comments';
+import type { Database } from '@/database.types';
 
 interface TaskDetailClientProps {
   task: Task;
-  attachments?: Array<{
-    id: string;
-    title: string;
-    url: string;
-    provider_type: string;
-    created_by?: any;
-  }>;
+  attachments?: Array<
+    Database['public']['Tables']['attachments']['Row'] & {
+      created_by: Database['public']['Tables']['users']['Row'] | null;
+    }
+  >;
+  initialComments?: TaskComment[];
 }
 
-type ExtendedTask = Task & {
-  created_by_user?: Task['created_by'];
-};
-
-export function TaskDetailClient({ task: initialTask, attachments = [] }: TaskDetailClientProps) {
+export function TaskDetailClient({
+  task: initialTask,
+  attachments = [],
+  initialComments = [],
+}: TaskDetailClientProps) {
   const router = useRouter();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [addLinkOpen, setAddLinkOpen] = useState(false);
@@ -77,8 +74,7 @@ export function TaskDetailClient({ task: initialTask, attachments = [] }: TaskDe
 
   const assignee = initialTask.assignee;
   const projectName = initialTask.project?.name || 'Project';
-  const normalizedTask = initialTask as ExtendedTask;
-  const createdBy = normalizedTask.created_by_user || normalizedTask.created_by;
+  const createdBy = initialTask.created_by;
   const overdue =
     initialTask.due_date && isOverdue(initialTask.due_date) && initialTask.status !== 'done';
 
@@ -185,12 +181,13 @@ export function TaskDetailClient({ task: initialTask, attachments = [] }: TaskDe
               ) : (
                 <div className="space-y-3">
                   {attachments.map((attachment) => {
+                    const providerType = attachment.provider_type || 'other';
                     const getIcon = (type: string) => {
                       if (type.includes('google')) return FileText;
                       if (type === 'figma' || type === 'canva') return FileText;
                       return Link2;
                     };
-                    const Icon = getIcon(attachment.provider_type);
+                    const Icon = getIcon(providerType);
 
                     return (
                       <div
@@ -204,7 +201,7 @@ export function TaskDetailClient({ task: initialTask, attachments = [] }: TaskDe
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{attachment.title}</p>
                             <p className="text-xs text-muted-foreground capitalize">
-                              {attachment.provider_type.replace('_', ' ')}
+                              {providerType.replace('_', ' ')}
                             </p>
                           </div>
                         </div>
@@ -254,46 +251,16 @@ export function TaskDetailClient({ task: initialTask, attachments = [] }: TaskDe
               )}
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-muted-foreground" />
-                <h2 className="text-lg font-semibold">Activity</h2>
-              </div>
-              <div className="space-y-5 rounded-2xl border bg-background/50 p-5">
-                <div className="flex gap-4">
-                  <Avatar>
-                    <AvatarImage src={createdBy?.avatar_url} alt={createdBy?.full_name} />
-                    <AvatarFallback>
-                      {createdBy?.full_name
-                        ?.split(' ')
-                        .map((n: string) => n[0])
-                        .join('') || 'ME'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 space-y-3">
-                    <Textarea
-                      placeholder="Add a comment..."
-                      className="min-h-[96px] resize-none"
-                    />
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <p>Supports markdown formatting.</p>
-                      <Button size="sm" disabled>
-                        <Send className="mr-2 h-4 w-4" />
-                        Post
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-6">
-                  <div className="text-center py-8 text-muted-foreground">
-                    <MessageSquare className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
-                    <p className="text-sm">No comments yet</p>
-                    <p className="text-xs">Be the first to comment on this task</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <TaskComments
+              key={initialTask.id}
+              taskId={initialTask.id}
+              currentUser={{
+                id: createdBy?.id || '',
+                full_name: createdBy?.full_name || 'User',
+                avatar_url: createdBy?.avatar_url || null,
+              }}
+              initialComments={initialComments}
+            />
           </div>
 
           <aside className="space-y-6">
@@ -373,15 +340,6 @@ export function TaskDetailClient({ task: initialTask, attachments = [] }: TaskDe
               </div>
             </div>
 
-            <div className="rounded-2xl border border-dashed border-primary/40 bg-background/60 p-6 text-center">
-              <UploadCloud className="mx-auto h-10 w-10 text-primary" />
-              <p className="mt-4 text-sm font-medium">Upload files</p>
-              <p className="text-xs text-muted-foreground">Click to upload or drag and drop PNG, JPG, PDF (max. 10MB)</p>
-              <Button variant="outline" size="sm" className="mt-4 gap-2">
-                <UploadCloud className="h-4 w-4" />
-                Select files
-              </Button>
-            </div>
           </aside>
         </div>
       </section>

@@ -14,18 +14,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Task, TaskType, TaskStatus, TaskPriority } from '@/lib/types';
+import { Task, TaskType, TaskStatus, TaskPriority, User } from '@/lib/types';
 import { updateTask } from '@/app/actions/tasks';
+import { UserSelect } from '@/components/user-select';
 import { toast } from 'sonner';
 import { ArrowLeft } from 'lucide-react';
 
 interface EditTaskFormProps {
   task: Task;
+  users: User[];
 }
 
-export function EditTaskForm({ task }: EditTaskFormProps) {
+export function EditTaskForm({ task, users }: EditTaskFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [assigneeId, setAssigneeId] = useState<string>(task.assignee?.id || '');
   const [formData, setFormData] = useState({
     title: task.title,
     description: task.description || '',
@@ -51,6 +54,7 @@ export function EditTaskForm({ task }: EditTaskFormProps) {
         status: formData.status,
         priority: formData.priority,
         due_date: formData.due_date || null,
+        assignee_id: assigneeId || null,
       });
 
       if (result.success) {
@@ -187,6 +191,17 @@ export function EditTaskForm({ task }: EditTaskFormProps) {
                 disabled={isPending}
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="assignee">Assignee</Label>
+            <UserSelect
+              users={users}
+              value={assigneeId}
+              onValueChange={setAssigneeId}
+              placeholder="Select assignee"
+              disabled={isPending}
+            />
           </div>
 
           <div className="flex justify-end gap-2">

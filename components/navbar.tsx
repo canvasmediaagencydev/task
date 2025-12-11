@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { Bell, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -16,12 +16,14 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { signOut } from '@/app/actions/auth';
-import { usePermissions } from '@/lib/hooks/use-permissions';
+import { NotificationsDropdown } from '@/components/notifications-dropdown';
+import type { Database } from '@/database.types';
+
+type UserProfile = Pick<Database['public']['Tables']['users']['Row'], 'id' | 'email' | 'full_name' | 'avatar_url'>;
 
 export function Navbar() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const { userRole } = usePermissions();
+  const [user, setUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     async function loadUser() {
@@ -34,7 +36,14 @@ export function Navbar() {
           .eq('id', authUser.id)
           .single();
 
-        setUser(profile || { email: authUser.email, full_name: 'User' });
+        setUser(
+          profile || {
+            id: authUser.id,
+            email: authUser.email ?? '',
+            full_name: 'User',
+            avatar_url: null,
+          }
+        );
       }
     }
 
@@ -55,16 +64,13 @@ export function Navbar() {
     <header className="flex h-16 items-center justify-end border-b bg-card px-6">
       <div className="flex items-center gap-2">
         <ThemeToggle />
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500" />
-        </Button>
+        <NotificationsDropdown />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
               <Avatar>
-                <AvatarImage src={user?.avatar_url} alt={user?.full_name} />
+                <AvatarImage src={user?.avatar_url || undefined} alt={user?.full_name} />
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
             </Button>
@@ -74,11 +80,6 @@ export function Navbar() {
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium">{user?.full_name || 'User'}</p>
                 <p className="text-xs text-muted-foreground">{user?.email}</p>
-                {userRole && (
-                  <p className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded w-fit">
-                    {userRole.name}
-                  </p>
-                )}
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

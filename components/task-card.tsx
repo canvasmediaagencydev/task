@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Task } from '@/lib/types';
 import {
-  getStatusColor,
   getPriorityColor,
   getTypeColor,
   getPriorityLabel,

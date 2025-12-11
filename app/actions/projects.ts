@@ -2,15 +2,15 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase-server';
-import { Database } from '@/lib/database.types';
-import { requirePermission } from '@/lib/rbac';
+import type { Database } from '@/database.types';
+import { requirePageAccess } from '@/lib/page-access';
 
 type ProjectInsert = Database['public']['Tables']['projects']['Insert'];
 type ProjectUpdate = Database['public']['Tables']['projects']['Update'];
 
 export async function createProject(data: ProjectInsert) {
   try {
-    await requirePermission('projects:create');
+    await requirePageAccess('projects');
 
     const supabase = await createClient();
 
@@ -32,7 +32,7 @@ export async function createProject(data: ProjectInsert) {
 
 export async function updateProject(id: string, data: ProjectUpdate) {
   try {
-    await requirePermission('projects:update');
+    await requirePageAccess('projects');
 
     const supabase = await createClient();
 
@@ -56,7 +56,7 @@ export async function updateProject(id: string, data: ProjectUpdate) {
 
 export async function deleteProject(id: string) {
   try {
-    await requirePermission('projects:delete');
+    await requirePageAccess('projects');
 
     const supabase = await createClient();
 

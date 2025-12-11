@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Filter, Search, X } from 'lucide-react';
+import { Plus, Filter, Search, X, Loader2 } from 'lucide-react';
 import { KanbanBoard } from '@/components/kanban-board';
 import { TasksTable } from '@/components/tasks-table';
 import { TasksCalendar } from '@/components/tasks-calendar';
@@ -18,12 +18,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useTasks } from '@/lib/hooks/use-tasks';
 
 interface TasksPageClientProps {
   initialTasks: Task[];
 }
 
 export function TasksPageClient({ initialTasks }: TasksPageClientProps) {
+  const { tasks: realtimeTasks, loading } = useTasks();
+  const tasks = loading && realtimeTasks.length === 0 ? initialTasks : realtimeTasks;
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilters, setStatusFilters] = useState<TaskStatus[]>([]);
@@ -34,7 +37,7 @@ export function TasksPageClient({ initialTasks }: TasksPageClientProps) {
   };
 
   const filteredTasks = useMemo(() => {
-    let filtered = initialTasks;
+    let filtered = tasks;
 
     // Apply search filter
     if (searchQuery) {
@@ -58,7 +61,7 @@ export function TasksPageClient({ initialTasks }: TasksPageClientProps) {
     }
 
     return filtered;
-  }, [initialTasks, searchQuery, statusFilters, priorityFilters]);
+  }, [tasks, searchQuery, statusFilters, priorityFilters]);
 
   const toggleStatusFilter = (status: TaskStatus) => {
     setStatusFilters((prev) =>
@@ -213,7 +216,7 @@ export function TasksPageClient({ initialTasks }: TasksPageClientProps) {
       {hasActiveFilters && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span>
-            Showing {filteredTasks.length} of {initialTasks.length} tasks
+            Showing {filteredTasks.length} of {tasks.length} tasks
           </span>
         </div>
       )}

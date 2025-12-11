@@ -33,11 +33,23 @@ export function NewProjectForm({ clients, users, onSuccess }: NewProjectFormProp
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>([]);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    client_id: string;
+    pipeline_stage_id: string;
+    status: 'active' | 'on_hold' | 'done';
+    sales_person_id: string;
+    ae_id: string;
+    qt_link: string;
+    brief_link: string;
+    start_date: string;
+    end_date: string;
+    internal_notes: string;
+  }>({
     name: '',
     client_id: '',
     pipeline_stage_id: '',
-    status: 'active' as const,
+    status: 'active',
     sales_person_id: '',
     ae_id: '',
     qt_link: '',

@@ -4,6 +4,7 @@ import { StatCard } from '@/components/stat-card';
 import { TaskStatusChart } from '@/components/task-status-chart';
 import { RecentActivities } from '@/components/recent-activities';
 import { fetchDashboardStats, fetchTaskStatusCounts, fetchRecentActivities } from '@/lib/api';
+import { PageGuard } from '@/components/page-guard';
 
 export default async function DashboardPage() {
   const [stats, statusCounts, activities] = await Promise.all([
@@ -13,11 +14,12 @@ export default async function DashboardPage() {
   ]);
 
   return (
-    <div className="space-y-6">
+    <PageGuard page="dashboard">
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back! Here's your overview.</p>
+          <p className="text-muted-foreground">Welcome back! Here&apos;s your overview.</p>
         </div>
         <Button>Create Task</Button>
       </div>
@@ -54,5 +56,6 @@ export default async function DashboardPage() {
         <RecentActivities activities={activities} />
       </div>
     </div>
+    </PageGuard>
   );
 }

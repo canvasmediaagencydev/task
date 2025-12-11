@@ -1,6 +1,6 @@
 import { ClientSummary } from '@/lib/types';
 import { createClient } from '@/lib/supabase-server';
-import { Database } from '@/lib/database.types';
+import type { Database } from '@/database.types';
 
 type SupabaseClientRow = Database['public']['Tables']['clients']['Row'] & {
   projects?: {

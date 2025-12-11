@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase-server';
 import { EditTaskForm } from '@/components/edit-task-form';
+import { fetchActiveUsers } from '@/lib/api';
+import { mapTaskRowToTask, TaskRowWithRelations } from '@/lib/task-mapper';
 
 export default async function EditTaskPage({
   params,
@@ -31,6 +33,9 @@ export default async function EditTaskPage({
     notFound();
   }
 
+  const normalizedTask = mapTaskRowToTask(task as TaskRowWithRelations);
+  const users = await fetchActiveUsers();
+
   return (
     <div className="space-y-6">
       <div>
@@ -39,7 +44,7 @@ export default async function EditTaskPage({
           Update task details
         </p>
       </div>
-      <EditTaskForm task={task} />
+      <EditTaskForm task={normalizedTask} users={users} />
     </div>
   );
 }

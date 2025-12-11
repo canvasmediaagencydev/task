@@ -22,6 +22,14 @@ import {
 import { toast } from 'sonner';
 import { createAttachment } from '@/app/actions/attachments';
 
+type ProviderType =
+  | 'google_drive'
+  | 'google_docs'
+  | 'google_sheets'
+  | 'canva'
+  | 'figma'
+  | 'other';
+
 interface AddLinkDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -41,13 +49,7 @@ export function AddLinkDialog({
   const [formData, setFormData] = useState({
     title: '',
     url: '',
-    provider_type: 'other' as
-      | 'google_drive'
-      | 'google_docs'
-      | 'google_sheets'
-      | 'canva'
-      | 'figma'
-      | 'other',
+    provider_type: 'other' as ProviderType,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -117,7 +119,7 @@ export function AddLinkDialog({
               <Label htmlFor="provider">Link Type</Label>
               <Select
                 value={formData.provider_type}
-                onValueChange={(value: any) =>
+                onValueChange={(value: ProviderType) =>
                   setFormData({ ...formData, provider_type: value })
                 }
               >

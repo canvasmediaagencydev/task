@@ -146,52 +146,60 @@ export function ProjectsTable({ projects, tasks, onSelectProject }: ProjectsTabl
               </TableRow>
             </TableHeader>
             <TableBody>
-              {enhancedProjects.map(({ project, projectTasks, progress }) => (
-                <TableRow
-                  key={project.id}
-                  className={cn('cursor-pointer', onSelectProject && 'hover:bg-muted/60')}
-                  onClick={() => onSelectProject?.(project)}
-                >
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{project.name}</p>
-                      <p className="text-sm text-muted-foreground">{projectTasks.length} tasks</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={cn('rounded-full px-3 py-1 text-xs font-semibold', statusMap[project.status].className)}>
-                      {statusMap[project.status].label}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{project.client?.name || '—'}</TableCell>
-                  <TableCell>
-                    {project.ae ? (
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={project.ae.avatar_url} alt={project.ae.full_name} />
-                          <AvatarFallback>
-                            {project.ae.full_name
-                              .split(' ')
-                              .map((n) => n[0])
-                              .join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span>{project.ae.full_name}</span>
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">Unassigned</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="h-2 w-32 rounded-full bg-muted">
-                        <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
-                      </div>
-                      <span className="text-sm text-muted-foreground">{progress}%</span>
-                    </div>
+              {enhancedProjects.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-12 text-center text-muted-foreground">
+                    No projects found for your current filters.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                enhancedProjects.map(({ project, projectTasks, progress }) => (
+                  <TableRow
+                    key={project.id}
+                    className={cn('cursor-pointer', onSelectProject && 'hover:bg-muted/60')}
+                    onClick={() => onSelectProject?.(project)}
+                  >
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{project.name}</p>
+                        <p className="text-sm text-muted-foreground">{projectTasks.length} tasks</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={cn('rounded-full px-3 py-1 text-xs font-semibold', statusMap[project.status].className)}>
+                        {statusMap[project.status].label}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{project.client?.name || '—'}</TableCell>
+                    <TableCell>
+                      {project.ae ? (
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={project.ae.avatar_url} alt={project.ae.full_name} />
+                            <AvatarFallback>
+                              {project.ae.full_name
+                                .split(' ')
+                                .map((n) => n[0])
+                                .join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span>{project.ae.full_name}</span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">Unassigned</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="h-2 w-32 rounded-full bg-muted">
+                          <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
+                        </div>
+                        <span className="text-sm text-muted-foreground">{progress}%</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>

@@ -1,18 +1,13 @@
+import type { CSSProperties, ReactNode } from "react";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/lib/auth-context";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const fontVariables: CSSProperties & Record<string, string> = {
+  "--font-geist-sans": '"Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
+  "--font-geist-mono": '"JetBrains Mono", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+};
 
 export const metadata: Metadata = {
   title: "TaskFlow - Team Task Management",
@@ -22,13 +17,11 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    <html lang="en" suppressHydrationWarning style={fontVariables}>
+      <body className="font-sans antialiased">
         <AuthProvider>
           <ThemeProvider
             attribute="class"

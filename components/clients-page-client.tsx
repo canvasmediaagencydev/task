@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { ClientSummary } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Building2, Mail, Phone, UserPlus, Search, ClipboardList } from 'lucide-react';

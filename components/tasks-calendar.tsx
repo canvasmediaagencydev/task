@@ -3,11 +3,10 @@
 import { useState } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday } from 'date-fns';
 import { Task } from '@/lib/types';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getPriorityColor, getStatusColor } from '@/lib/format';
+import { getStatusColor } from '@/lib/format';
 
 interface TasksCalendarProps {
   tasks: Task[];

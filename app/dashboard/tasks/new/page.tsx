@@ -1,6 +1,9 @@
 import { NewTaskForm } from '@/components/new-task-form';
+import { fetchActiveUsers } from '@/lib/api';
 
-export default function NewTaskPage() {
+export default async function NewTaskPage() {
+  const users = await fetchActiveUsers();
+
   return (
     <div className="space-y-6">
       <div>
@@ -10,7 +13,7 @@ export default function NewTaskPage() {
         </p>
       </div>
 
-      <NewTaskForm />
+      <NewTaskForm users={users} />
     </div>
   );
 }

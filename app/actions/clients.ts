@@ -1,18 +1,18 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase-server';
-import { Database } from '@/lib/database.types';
-import { requirePermission } from '@/lib/rbac';
+import { createClient as createSupabaseClient } from '@/lib/supabase-server';
+import type { Database } from '@/database.types';
+import { requirePageAccess } from '@/lib/page-access';
 
 type ClientInsert = Database['public']['Tables']['clients']['Insert'];
 type ClientUpdate = Database['public']['Tables']['clients']['Update'];
 
 export async function createClient(data: ClientInsert) {
   try {
-    await requirePermission('clients:create');
+    await requirePageAccess('clients');
 
-    const supabase = await createClient();
+    const supabase = await createSupabaseClient();
 
     const { data: client, error } = await supabase
       .from('clients')
@@ -32,9 +32,9 @@ export async function createClient(data: ClientInsert) {
 
 export async function updateClient(id: string, data: ClientUpdate) {
   try {
-    await requirePermission('clients:update');
+    await requirePageAccess('clients');
 
-    const supabase = await createClient();
+    const supabase = await createSupabaseClient();
 
     const { data: client, error } = await supabase
       .from('clients')
@@ -56,9 +56,9 @@ export async function updateClient(id: string, data: ClientUpdate) {
 
 export async function deleteClient(id: string) {
   try {
-    await requirePermission('clients:delete');
+    await requirePageAccess('clients');
 
-    const supabase = await createClient();
+    const supabase = await createSupabaseClient();
 
     const { error } = await supabase
       .from('clients')

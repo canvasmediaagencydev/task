@@ -2,13 +2,14 @@
 
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Project, Task } from '@/lib/types';
+import type { Task } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TasksTable } from '@/components/tasks-table';
 import { formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import type { Database } from '@/database.types';
 import {
   ArrowLeft,
   CalendarDays,
@@ -27,9 +28,16 @@ import {
   MessageSquare,
 } from 'lucide-react';
 
+type ProjectRow = Database['public']['Tables']['projects']['Row'] & {
+  client: Database['public']['Tables']['clients']['Row'] | null;
+  sales_person: Database['public']['Tables']['users']['Row'] | null;
+  ae: Database['public']['Tables']['users']['Row'] | null;
+  pipeline_stage: Database['public']['Tables']['pipeline_stages']['Row'] | null;
+};
+
 interface ProjectDetailClientProps {
-  project: any;
-  tasks: any[];
+  project: ProjectRow;
+  tasks: Task[];
 }
 
 const statusStyles: Record<string, string> = {
@@ -40,6 +48,7 @@ const statusStyles: Record<string, string> = {
 
 export function ProjectDetailClient({ project, tasks }: ProjectDetailClientProps) {
   const router = useRouter();
+  const projectStatus = project.status || 'active';
 
   const stats = useMemo(() => {
     const total = tasks.length;
@@ -56,7 +65,7 @@ export function ProjectDetailClient({ project, tasks }: ProjectDetailClientProps
     };
   }, [tasks]);
 
-  const handleViewTask = (task: any) => {
+  const handleViewTask = (task: Task) => {
     router.push(`/dashboard/tasks/${task.id}`);
   };
 
@@ -99,8 +108,8 @@ export function ProjectDetailClient({ project, tasks }: ProjectDetailClientProps
             </div>
           </div>
           <div className="flex flex-col items-end gap-3 text-sm text-muted-foreground">
-            <Badge className={cn('rounded-full px-4 py-1 text-xs capitalize', statusStyles[project.status])}>
-              {project.status.replace('_', ' ')}
+            <Badge className={cn('rounded-full px-4 py-1 text-xs capitalize', statusStyles[projectStatus])}>
+              {projectStatus.replace('_', ' ')}
             </Badge>
             <div className="flex flex-col items-end gap-2 text-right">
               {project.start_date && (

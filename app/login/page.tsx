@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,8 +22,9 @@ export default function LoginPage() {
         setLoading(false);
       }
       // If successful, the server action will redirect automatically
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign in');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to sign in';
+      setError(message);
       setLoading(false);
     }
   };
@@ -67,16 +67,10 @@ export default function LoginPage() {
               />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
+          <CardFooter>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Signing in...' : 'Sign in'}
             </Button>
-            <p className="text-center text-sm text-muted-foreground">
-              Don't have an account?{' '}
-              <Link href="/signup" className="text-primary hover:underline">
-                Sign up
-              </Link>
-            </p>
           </CardFooter>
         </form>
       </Card>

@@ -207,7 +207,7 @@ export function TasksTable({ tasks, onEditTask }: TasksTableProps) {
                   )}
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm">{task.project.name}</span>
+                  <span className="text-sm">{task.project?.name || '-'}</span>
                 </TableCell>
               </TableRow>
             );

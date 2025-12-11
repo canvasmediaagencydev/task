@@ -1,9 +1,16 @@
 import { createClient } from './supabase-server';
-import { Task, Project, User, Activity, DashboardStats, TaskStatusCount, TaskStatus } from './types';
+import { Task, User, Activity, DashboardStats, TaskStatusCount, TaskStatus } from './types';
+import type { Database } from '@/database.types';
+import { mapTaskRowToTask, mapSupabaseUser, TaskRowWithRelations } from './task-mapper';
 
 // Fetch all tasks with related data
 export async function fetchTasks(): Promise<Task[]> {
   const supabase = await createClient();
+
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
   const { data: tasksData, error } = await supabase
     .from('tasks')
     .select(`
@@ -16,6 +23,7 @@ export async function fetchTasks(): Promise<Task[]> {
       reviewer:users!tasks_reviewer_id_fkey(*),
       created_by_user:users!tasks_created_by_fkey(*)
     `)
+    .or(`assignee_id.eq.${user.id},created_by.eq.${user.id}`)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -23,66 +31,74 @@ export async function fetchTasks(): Promise<Task[]> {
     return [];
   }
 
-  return (tasksData || []).map((task: any) => ({
-    id: task.id,
-    title: task.title,
-    description: task.description,
-    type: task.type as Task['type'],
-    status: task.status as Task['status'],
-    priority: task.priority as Task['priority'],
-    assignee: task.assignee,
-    reviewer: task.reviewer,
-    due_date: task.due_date,
-    completed_at: task.completed_at,
-    created_by: task.created_by_user,
-    created_at: task.created_at,
-    updated_at: task.updated_at,
-    project: {
-      id: task.project?.id || '',
-      name: task.project?.name || '',
-      status: task.project?.status || 'active',
-      client: task.project?.client || { id: '', name: '' },
-    },
-  }));
+  const taskRows = (tasksData || []) as TaskRowWithRelations[];
+  return taskRows.map((task) => mapTaskRowToTask(task));
 }
 
 // Fetch dashboard stats
 export async function fetchDashboardStats(): Promise<DashboardStats> {
   const supabase = await createClient();
-  // Get total tasks
-  const { count: totalTasks } = await supabase
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      total_tasks: 0,
+      active_projects: 0,
+      completion_rate: 0,
+      overdue_tasks: 0,
+    };
+  }
+
+  const { data: tasksData, error } = await supabase
     .from('tasks')
-    .select('*', { count: 'exact', head: true });
+    .select(`
+      id,
+      status,
+      due_date,
+      project:projects(id, status)
+    `)
+    .or(`assignee_id.eq.${user.id},created_by.eq.${user.id}`);
 
-  // Get active projects
-  const { count: activeProjects } = await supabase
-    .from('projects')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'active');
+  if (error) {
+    console.error('Error fetching dashboard stats:', error);
+    return {
+      total_tasks: 0,
+      active_projects: 0,
+      completion_rate: 0,
+      overdue_tasks: 0,
+    };
+  }
 
-  // Get completed tasks
-  const { count: completedTasks } = await supabase
-    .from('tasks')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'done');
+  type TaskWithProjectStatus = Database['public']['Tables']['tasks']['Row'] & {
+    project: Pick<Database['public']['Tables']['projects']['Row'], 'id' | 'status'> | null;
+  };
 
-  // Get overdue tasks
+  const tasks = (tasksData || []) as TaskWithProjectStatus[];
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter((task) => task.status === 'done').length;
   const now = new Date().toISOString();
-  const { count: overdueTasks } = await supabase
-    .from('tasks')
-    .select('*', { count: 'exact', head: true })
-    .lt('due_date', now)
-    .neq('status', 'done');
+  const overdueTasks = tasks.filter(
+    (task) => task.due_date && task.due_date < now && task.status !== 'done'
+  ).length;
+  const activeProjects = Array.from(
+    new Set(
+      tasks
+        .filter((task) => task.project?.status === 'active' && task.project?.id)
+        .map((task) => task.project?.id as string)
+    )
+  ).length;
 
-  const completionRate = totalTasks && totalTasks > 0
-    ? Math.round(((completedTasks || 0) / totalTasks) * 100)
+  const completionRate = totalTasks > 0
+    ? Math.round((completedTasks / totalTasks) * 100)
     : 0;
 
   return {
-    total_tasks: totalTasks || 0,
-    active_projects: activeProjects || 0,
+    total_tasks: totalTasks,
+    active_projects: activeProjects,
     completion_rate: completionRate,
-    overdue_tasks: overdueTasks || 0,
+    overdue_tasks: overdueTasks,
   };
 }
 
@@ -99,24 +115,63 @@ export async function fetchTaskStatusCounts(): Promise<TaskStatusCount[]> {
     'done',
   ];
 
-  const counts = await Promise.all(
-    statuses.map(async (status) => {
-      const { count } = await supabase
-        .from('tasks')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', status);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-      return { status, count: count || 0 };
-    })
-  );
+  if (!user) {
+    return statuses.map((status) => ({ status, count: 0 }));
+  }
 
-  return counts;
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('status')
+    .or(`assignee_id.eq.${user.id},created_by.eq.${user.id}`);
+
+  if (error) {
+    console.error('Error fetching task status counts:', error);
+    return statuses.map((status) => ({ status, count: 0 }));
+  }
+
+  const statusTotals = (data || []).reduce<Record<TaskStatus, number>>((acc, task) => {
+    const status = (task.status as TaskStatus) ?? 'backlog';
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {} as Record<TaskStatus, number>);
+
+  return statuses.map((status) => ({ status, count: statusTotals[status] || 0 }));
 }
 
 // Fetch recent activities
 export async function fetchRecentActivities(): Promise<Activity[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return [];
+  }
+
+  const { data: userTasks, error: tasksError } = await supabase
+    .from('tasks')
+    .select('id')
+    .or(`assignee_id.eq.${user.id},created_by.eq.${user.id}`);
+
+  if (tasksError) {
+    console.error('Error fetching user tasks for activities:', tasksError);
+    return [];
+  }
+
+  const taskIds = (userTasks || []).map((task) => task.id).filter(Boolean);
+  const orFilters = [`created_by.eq.${user.id}`];
+
+  if (taskIds.length > 0) {
+    const inClause = taskIds.map((id) => `"${id}"`).join(',');
+    orFilters.push(`and(entity_type.eq.task,entity_id.in.(${inClause}))`);
+  }
+
+  const query = supabase
     .from('activity_logs')
     .select(`
       *,
@@ -125,20 +180,58 @@ export async function fetchRecentActivities(): Promise<Activity[]> {
     .order('created_at', { ascending: false })
     .limit(10);
 
+  const { data, error } = orFilters.length > 0
+    ? await query.or(orFilters.join(','))
+    : await query.eq('created_by', user.id);
+
   if (error) {
     console.error('Error fetching activities:', error);
     return [];
   }
 
-  return (data || []).map((log: any) => ({
-    id: log.id,
-    entity_type: log.entity_type as 'task' | 'project',
-    entity_id: log.entity_id,
-    action: log.action,
-    description: log.description || '',
-    created_by: log.created_by_user,
-    created_at: log.created_at,
-  }));
+  type ActivityRow = Database['public']['Tables']['activity_logs']['Row'] & {
+    created_by_user: Database['public']['Tables']['users']['Row'] | null;
+  };
+
+  return (data || []).map((log) => {
+    const typedLog = log as ActivityRow;
+    return {
+      id: typedLog.id,
+      entity_type: typedLog.entity_type as 'task' | 'project',
+      entity_id: typedLog.entity_id,
+      action: typedLog.action,
+      description: typedLog.description || '',
+      created_by:
+        mapSupabaseUser(typedLog.created_by_user) ?? {
+          id: typedLog.created_by ?? 'unknown',
+          email: '',
+          full_name: 'Unknown',
+          avatar_url: undefined,
+          is_active: true,
+        },
+      created_at: typedLog.created_at ?? new Date().toISOString(),
+    } satisfies Activity;
+  });
+}
+
+// Fetch active users for assignment dropdown
+export async function fetchActiveUsers(): Promise<User[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('is_active', true)
+    .order('full_name');
+
+  if (error) {
+    console.error('Error fetching users:', error);
+    return [];
+  }
+
+  return (data || [])
+    .map((user) => mapSupabaseUser(user))
+    .filter((user): user is User => Boolean(user));
 }
 
 // Update task status

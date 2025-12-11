@@ -24,7 +24,7 @@ const baseMockTask: Task = {
     is_active: true,
   },
   due_date: '2023-12-15T00:00:00.000Z',
-  completed_at: null,
+  completed_at: undefined,
   created_by: {
     id: 'user-jane',
     email: 'jane.doe@example.com',
