@@ -9,20 +9,20 @@ const baseMockTask: Task = {
   type: 'graphic',
   status: 'in_progress',
   priority: 'high',
-  assignee: {
+  assignees: [{
     id: 'user-alex',
     email: 'alex.johnson@example.com',
     full_name: 'Alex Johnson',
     avatar_url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Alex',
     is_active: true,
-  },
-  reviewer: {
+  }],
+  reviewers: [{
     id: 'user-olivia',
     email: 'olivia.chen@example.com',
     full_name: 'Olivia Chen',
     avatar_url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Olivia',
     is_active: true,
-  },
+  }],
   due_date: '2023-12-15T00:00:00.000Z',
   completed_at: undefined,
   created_by: {

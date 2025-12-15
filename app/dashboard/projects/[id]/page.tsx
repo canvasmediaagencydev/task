@@ -21,7 +21,9 @@ export default async function ProjectDetailPage({
         client:clients(*),
         sales_person:users!projects_sales_person_id_fkey(*),
         ae:users!projects_ae_id_fkey(*),
-        pipeline_stage:pipeline_stages(*)
+        pipeline_stage:pipeline_stages(*),
+        project_sales_persons(users(*)),
+        project_account_executives(users(*))
       `)
       .eq('id', id)
       .single(),
@@ -31,7 +33,9 @@ export default async function ProjectDetailPage({
         *,
         assignee:users!tasks_assignee_id_fkey(*),
         reviewer:users!tasks_reviewer_id_fkey(*),
-        created_by:users!tasks_created_by_fkey(*)
+        created_by:users!tasks_created_by_fkey(*),
+        task_assignees(users(*)),
+        task_reviewers(users(*))
       `)
       .eq('project_id', id)
       .order('created_at', { ascending: false }),
@@ -46,9 +50,29 @@ export default async function ProjectDetailPage({
     sales_person: Database['public']['Tables']['users']['Row'] | null;
     ae: Database['public']['Tables']['users']['Row'] | null;
     pipeline_stage: Database['public']['Tables']['pipeline_stages']['Row'] | null;
+    project_sales_persons?: Array<{
+      users: Database['public']['Tables']['users']['Row'] | null;
+    }>;
+    project_account_executives?: Array<{
+      users: Database['public']['Tables']['users']['Row'] | null;
+    }>;
   };
 
   const project = projectResult.data as ProjectRow;
+
+  // Map sales persons array (prefer junction table, fallback to old field)
+  const sales_persons = project.project_sales_persons && project.project_sales_persons.length > 0
+    ? project.project_sales_persons
+        .map(item => mapSupabaseUser(item.users))
+        .filter((u): u is NonNullable<typeof u> => Boolean(u))
+    : (project.sales_person ? [mapSupabaseUser(project.sales_person)].filter((u): u is NonNullable<typeof u> => Boolean(u)) : undefined);
+
+  // Map account executives array (prefer junction table, fallback to old field)
+  const account_executives = project.project_account_executives && project.project_account_executives.length > 0
+    ? project.project_account_executives
+        .map(item => mapSupabaseUser(item.users))
+        .filter((u): u is NonNullable<typeof u> => Boolean(u))
+    : (project.ae ? [mapSupabaseUser(project.ae)].filter((u): u is NonNullable<typeof u> => Boolean(u)) : undefined);
 
   const fallbackProject: Project = {
     id: project.id,
@@ -63,8 +87,8 @@ export default async function ProjectDetailPage({
       notes: project.client?.notes ?? undefined,
     },
     status: (project.status as Project['status']) ?? 'active',
-    sales_person: mapSupabaseUser(project.sales_person),
-    ae: mapSupabaseUser(project.ae),
+    sales_persons,
+    account_executives,
     start_date: project.start_date ?? undefined,
     end_date: project.end_date ?? undefined,
     confirmed_at: project.confirmed_at ?? undefined,

@@ -72,7 +72,7 @@ export function TaskDetailClient({
   const [addLinkOpen, setAddLinkOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  const assignee = initialTask.assignee;
+  const assignees = initialTask.assignees || [];
   const projectName = initialTask.project?.name || 'Project';
   const createdBy = initialTask.created_by;
   const overdue =
@@ -268,22 +268,26 @@ export function TaskDetailClient({
               <h2 className="text-lg font-semibold">Details</h2>
               <div className="mt-4 space-y-4 text-sm">
                 <div>
-                  <p className="text-xs uppercase text-muted-foreground">Assignee</p>
-                  {assignee ? (
-                    <div className="mt-2 flex items-center gap-3">
-                      <Avatar className="h-9 w-9">
-                        <AvatarImage src={assignee.avatar_url} alt={assignee.full_name} />
-                        <AvatarFallback>
-                          {assignee.full_name
-                            .split(' ')
-                            .map((n) => n[0])
-                            .join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{assignee.full_name}</p>
-                        <p className="text-xs text-muted-foreground">{assignee.email}</p>
-                      </div>
+                  <p className="text-xs uppercase text-muted-foreground">Assignees</p>
+                  {assignees.length > 0 ? (
+                    <div className="mt-2 space-y-2">
+                      {assignees.map((assignee) => (
+                        <div key={assignee.id} className="flex items-center gap-3">
+                          <Avatar className="h-9 w-9">
+                            <AvatarImage src={assignee.avatar_url} alt={assignee.full_name} />
+                            <AvatarFallback>
+                              {assignee.full_name
+                                .split(' ')
+                                .map((n) => n[0])
+                                .join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{assignee.full_name}</p>
+                            <p className="text-xs text-muted-foreground">{assignee.email}</p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   ) : (
                     <p className="mt-2 text-muted-foreground">Unassigned</p>

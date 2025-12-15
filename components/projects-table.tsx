@@ -172,18 +172,23 @@ export function ProjectsTable({ projects, tasks, onSelectProject }: ProjectsTabl
                     </TableCell>
                     <TableCell>{project.client?.name || '—'}</TableCell>
                     <TableCell>
-                      {project.ae ? (
+                      {project.account_executives && project.account_executives.length > 0 ? (
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={project.ae.avatar_url} alt={project.ae.full_name} />
+                            <AvatarImage src={project.account_executives[0].avatar_url} alt={project.account_executives[0].full_name} />
                             <AvatarFallback>
-                              {project.ae.full_name
+                              {project.account_executives[0].full_name
                                 .split(' ')
                                 .map((n) => n[0])
                                 .join('')}
                             </AvatarFallback>
                           </Avatar>
-                          <span>{project.ae.full_name}</span>
+                          <span>
+                            {project.account_executives[0].full_name}
+                            {project.account_executives.length > 1 && (
+                              <span className="text-muted-foreground"> +{project.account_executives.length - 1}</span>
+                            )}
+                          </span>
                         </div>
                       ) : (
                         <span className="text-muted-foreground">Unassigned</span>
