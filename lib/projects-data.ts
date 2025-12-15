@@ -26,9 +26,65 @@ type SupabaseProjectRow = Database['public']['Tables']['projects']['Row'] & {
     avatar_url?: string | null;
     is_active?: boolean | null;
   } | null;
+  project_sales_persons?: Array<{
+    users: {
+      id: string;
+      email: string;
+      full_name: string;
+      avatar_url?: string | null;
+      is_active?: boolean | null;
+    } | null;
+  }>;
+  project_account_executives?: Array<{
+    users: {
+      id: string;
+      email: string;
+      full_name: string;
+      avatar_url?: string | null;
+      is_active?: boolean | null;
+    } | null;
+  }>;
 };
 
 function mapProject(row: SupabaseProjectRow): Project {
+  // Map sales persons array (prefer junction table, fallback to old field)
+  const sales_persons = row.project_sales_persons && row.project_sales_persons.length > 0
+    ? row.project_sales_persons
+        .map(item => item.users ? {
+          id: item.users.id,
+          email: item.users.email,
+          full_name: item.users.full_name,
+          avatar_url: item.users.avatar_url ?? undefined,
+          is_active: item.users.is_active ?? true,
+        } : null)
+        .filter((u): u is NonNullable<typeof u> => Boolean(u))
+    : (row.sales_person ? [{
+        id: row.sales_person.id,
+        email: row.sales_person.email,
+        full_name: row.sales_person.full_name,
+        avatar_url: row.sales_person.avatar_url ?? undefined,
+        is_active: row.sales_person.is_active ?? true,
+      }] : undefined);
+
+  // Map account executives array (prefer junction table, fallback to old field)
+  const account_executives = row.project_account_executives && row.project_account_executives.length > 0
+    ? row.project_account_executives
+        .map(item => item.users ? {
+          id: item.users.id,
+          email: item.users.email,
+          full_name: item.users.full_name,
+          avatar_url: item.users.avatar_url ?? undefined,
+          is_active: item.users.is_active ?? true,
+        } : null)
+        .filter((u): u is NonNullable<typeof u> => Boolean(u))
+    : (row.ae ? [{
+        id: row.ae.id,
+        email: row.ae.email,
+        full_name: row.ae.full_name,
+        avatar_url: row.ae.avatar_url ?? undefined,
+        is_active: row.ae.is_active ?? true,
+      }] : undefined);
+
   return {
     id: row.id,
     name: row.name,
@@ -44,20 +100,8 @@ function mapProject(row: SupabaseProjectRow): Project {
       id: row.client_id || 'client-missing',
       name: 'Unknown Client',
     },
-    sales_person: row.sales_person ? {
-      id: row.sales_person.id,
-      email: row.sales_person.email,
-      full_name: row.sales_person.full_name,
-      avatar_url: row.sales_person.avatar_url ?? undefined,
-      is_active: row.sales_person.is_active ?? true,
-    } : undefined,
-    ae: row.ae ? {
-      id: row.ae.id,
-      email: row.ae.email,
-      full_name: row.ae.full_name,
-      avatar_url: row.ae.avatar_url ?? undefined,
-      is_active: row.ae.is_active ?? true,
-    } : undefined,
+    sales_persons,
+    account_executives,
     start_date: row.start_date || undefined,
     end_date: row.end_date || undefined,
     confirmed_at: row.confirmed_at || undefined,
@@ -83,17 +127,15 @@ export async function fetchProjectsAndTasks(): Promise<{
     new Set(tasks.map((task) => task.project?.id).filter((id): id is string => Boolean(id)))
   );
 
-  if (projectIds.length === 0) {
-    return { projects: [], tasks };
-  }
-
   const baseQuery = supabase
     .from('projects')
     .select(`
       *,
       client:clients(*),
       sales_person:users!projects_sales_person_id_fkey(*),
-      ae:users!projects_ae_id_fkey(*)
+      ae:users!projects_ae_id_fkey(*),
+      project_sales_persons(users(*)),
+      project_account_executives(users(*))
     `)
     .order('created_at', { ascending: false });
 

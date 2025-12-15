@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select';
 import { TaskType, TaskStatus, TaskPriority, User } from '@/lib/types';
 import { createTask } from '@/app/actions/tasks';
-import { UserSelect } from '@/components/user-select';
+import { UserMultiSelect } from '@/components/ui/user-multi-select';
 import { toast } from 'sonner';
 import { ArrowLeft } from 'lucide-react';
 
@@ -27,7 +27,8 @@ interface NewTaskFormProps {
 export function NewTaskForm({ users }: NewTaskFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [assigneeId, setAssigneeId] = useState<string>('');
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
+  const [reviewerIds, setReviewerIds] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -53,7 +54,8 @@ export function NewTaskForm({ users }: NewTaskFormProps) {
         status: formData.status,
         priority: formData.priority,
         due_date: formData.due_date || null,
-        assignee_id: assigneeId || null,
+        assignee_ids: assigneeIds,
+        reviewer_ids: reviewerIds,
       });
 
       if (result.success) {
@@ -181,13 +183,22 @@ export function NewTaskForm({ users }: NewTaskFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="assignee">Assignee</Label>
-            <UserSelect
+            <Label htmlFor="assignees">Assignees</Label>
+            <UserMultiSelect
               users={users}
-              value={assigneeId}
-              onValueChange={setAssigneeId}
-              placeholder="Select assignee"
-              disabled={isPending}
+              selectedUserIds={assigneeIds}
+              onSelectionChange={setAssigneeIds}
+              placeholder="Select assignees..."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="reviewers">Reviewers</Label>
+            <UserMultiSelect
+              users={users}
+              selectedUserIds={reviewerIds}
+              onSelectionChange={setReviewerIds}
+              placeholder="Select reviewers..."
             />
           </div>
         </CardContent>

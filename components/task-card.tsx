@@ -67,20 +67,29 @@ export function TaskCard({ task, isDragging, onEdit }: TaskCardProps) {
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {task.assignee && (
-                <Avatar className="h-6 w-6">
-                  <AvatarImage
-                    src={task.assignee.avatar_url}
-                    alt={task.assignee.full_name}
-                  />
-                  <AvatarFallback className="text-xs">
-                    {task.assignee.full_name
-                      .split(' ')
-                      .map((n) => n[0])
-                      .join('')}
-                  </AvatarFallback>
-                </Avatar>
+            <div className="flex items-center gap-1">
+              {task.assignees && task.assignees.length > 0 && (
+                <>
+                  {task.assignees.slice(0, 3).map((assignee) => (
+                    <Avatar key={assignee.id} className="h-6 w-6">
+                      <AvatarImage
+                        src={assignee.avatar_url}
+                        alt={assignee.full_name}
+                      />
+                      <AvatarFallback className="text-xs">
+                        {assignee.full_name
+                          .split(' ')
+                          .map((n) => n[0])
+                          .join('')}
+                      </AvatarFallback>
+                    </Avatar>
+                  ))}
+                  {task.assignees.length > 3 && (
+                    <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs">
+                      +{task.assignees.length - 3}
+                    </div>
+                  )}
+                </>
               )}
             </div>
 

@@ -38,6 +38,9 @@ export async function createTask(data: {
   priority: TaskPriority;
   due_date?: string | null;
   assignee_id?: string | null;
+  assignee_ids?: string[];
+  reviewer_ids?: string[];
+  project_id?: string | null;
 }) {
   await requirePageAccess('tasks');
 
@@ -57,19 +60,56 @@ export async function createTask(data: {
     priority: data.priority,
     due_date: data.due_date || null,
     assignee_id: data.assignee_id || null,
+    project_id: data.project_id || null,
     created_by: user.id,
   };
 
-  const { error } = await supabase.from('tasks').insert(insertData);
+  const { data: task, error } = await supabase
+    .from('tasks')
+    .insert(insertData)
+    .select()
+    .single();
 
-  if (error) {
+  if (error || !task) {
     console.error('Error creating task:', error);
-    return { error: error.message };
+    return { error: error?.message || 'Failed to create task' };
+  }
+
+  // Insert assignees into junction table
+  if (data.assignee_ids && data.assignee_ids.length > 0) {
+    const { error: assigneeError } = await supabase
+      .from('task_assignees')
+      .insert(
+        data.assignee_ids.map(userId => ({
+          task_id: task.id,
+          user_id: userId,
+        }))
+      );
+
+    if (assigneeError) {
+      console.error('Error inserting assignees:', assigneeError);
+    }
+  }
+
+  // Insert reviewers into junction table
+  if (data.reviewer_ids && data.reviewer_ids.length > 0) {
+    const { error: reviewerError } = await supabase
+      .from('task_reviewers')
+      .insert(
+        data.reviewer_ids.map(userId => ({
+          task_id: task.id,
+          user_id: userId,
+        }))
+      );
+
+    if (reviewerError) {
+      console.error('Error inserting reviewers:', reviewerError);
+    }
   }
 
   revalidatePath('/dashboard/tasks');
 
-  return { success: true };
+  return { success: true, taskId: task.id };
 }
 
 export async function updateTask(taskId: string, data: {
@@ -80,13 +120,23 @@ export async function updateTask(taskId: string, data: {
   priority?: TaskPriority;
   due_date?: string | null;
   assignee_id?: string | null;
+  assignee_ids?: string[];
+  reviewer_ids?: string[];
+  project_id?: string | null;
 }) {
   await requirePageAccess('tasks');
 
   const supabase = await createClient();
 
   const updateData: Database['public']['Tables']['tasks']['Update'] = {
-    ...data,
+    title: data.title,
+    description: data.description,
+    type: data.type,
+    status: data.status,
+    priority: data.priority,
+    due_date: data.due_date,
+    assignee_id: data.assignee_id,
+    project_id: data.project_id,
     updated_at: new Date().toISOString(),
   };
 
@@ -98,6 +148,56 @@ export async function updateTask(taskId: string, data: {
   if (error) {
     console.error('Error updating task:', error);
     return { error: error.message };
+  }
+
+  // Update assignees: delete existing and insert new ones
+  if (data.assignee_ids !== undefined) {
+    // Delete existing assignees
+    await supabase
+      .from('task_assignees')
+      .delete()
+      .eq('task_id', taskId);
+
+    // Insert new assignees
+    if (data.assignee_ids.length > 0) {
+      const { error: assigneeError } = await supabase
+        .from('task_assignees')
+        .insert(
+          data.assignee_ids.map(userId => ({
+            task_id: taskId,
+            user_id: userId,
+          }))
+        );
+
+      if (assigneeError) {
+        console.error('Error updating assignees:', assigneeError);
+      }
+    }
+  }
+
+  // Update reviewers: delete existing and insert new ones
+  if (data.reviewer_ids !== undefined) {
+    // Delete existing reviewers
+    await supabase
+      .from('task_reviewers')
+      .delete()
+      .eq('task_id', taskId);
+
+    // Insert new reviewers
+    if (data.reviewer_ids.length > 0) {
+      const { error: reviewerError } = await supabase
+        .from('task_reviewers')
+        .insert(
+          data.reviewer_ids.map(userId => ({
+            task_id: taskId,
+            user_id: userId,
+          }))
+        );
+
+      if (reviewerError) {
+        console.error('Error updating reviewers:', reviewerError);
+      }
+    }
   }
 
   revalidatePath('/dashboard/tasks');

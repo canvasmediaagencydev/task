@@ -14,11 +14,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { createProject, fetchPipelineStages } from '@/app/actions/projects';
+import { UserMultiSelect } from '@/components/ui/user-multi-select';
 import { toast } from 'sonner';
 
 interface NewProjectFormProps {
   clients: Array<{ id: string; name: string }>;
-  users: Array<{ id: string; full_name: string }>;
+  users: Array<{ id: string; full_name: string; email?: string }>;
   onSuccess?: () => void;
 }
 
@@ -33,13 +34,13 @@ export function NewProjectForm({ clients, users, onSuccess }: NewProjectFormProp
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>([]);
+  const [salesPersonIds, setSalesPersonIds] = useState<string[]>([]);
+  const [aeIds, setAeIds] = useState<string[]>([]);
   const [formData, setFormData] = useState<{
     name: string;
     client_id: string;
     pipeline_stage_id: string;
     status: 'active' | 'on_hold' | 'done';
-    sales_person_id: string;
-    ae_id: string;
     qt_link: string;
     brief_link: string;
     start_date: string;
@@ -50,8 +51,6 @@ export function NewProjectForm({ clients, users, onSuccess }: NewProjectFormProp
     client_id: '',
     pipeline_stage_id: '',
     status: 'active',
-    sales_person_id: '',
-    ae_id: '',
     qt_link: '',
     brief_link: '',
     start_date: '',
@@ -78,13 +77,13 @@ export function NewProjectForm({ clients, users, onSuccess }: NewProjectFormProp
         ...formData,
         client_id: formData.client_id || null,
         pipeline_stage_id: formData.pipeline_stage_id || null,
-        sales_person_id: formData.sales_person_id || null,
-        ae_id: formData.ae_id || null,
         qt_link: formData.qt_link || null,
         brief_link: formData.brief_link || null,
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
         internal_notes: formData.internal_notes || null,
+        sales_person_ids: salesPersonIds,
+        ae_ids: aeIds,
       };
 
       const result = await createProject(dataToSubmit);
@@ -164,41 +163,23 @@ export function NewProjectForm({ clients, users, onSuccess }: NewProjectFormProp
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="sales_person_id">Sales Person</Label>
-            <Select
-              value={formData.sales_person_id}
-              onValueChange={(value) => setFormData({ ...formData, sales_person_id: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select sales person" />
-              </SelectTrigger>
-              <SelectContent>
-                {users.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="sales_persons">Sales Persons</Label>
+            <UserMultiSelect
+              users={users}
+              selectedUserIds={salesPersonIds}
+              onSelectionChange={setSalesPersonIds}
+              placeholder="Select sales persons..."
+            />
           </div>
 
           <div>
-            <Label htmlFor="ae_id">Account Executive</Label>
-            <Select
-              value={formData.ae_id}
-              onValueChange={(value) => setFormData({ ...formData, ae_id: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select AE" />
-              </SelectTrigger>
-              <SelectContent>
-                {users.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="account_executives">Account Executives</Label>
+            <UserMultiSelect
+              users={users}
+              selectedUserIds={aeIds}
+              onSelectionChange={setAeIds}
+              placeholder="Select AEs..."
+            />
           </div>
         </div>
 

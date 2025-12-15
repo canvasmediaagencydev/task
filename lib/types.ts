@@ -53,8 +53,8 @@ export interface Project {
   name: string;
   client: Client;
   status: ProjectStatus;
-  sales_person?: User;
-  ae?: User;
+  sales_persons?: User[];  // Changed from sales_person to sales_persons (array)
+  account_executives?: User[];  // Changed from ae to account_executives (array)
   start_date?: string;
   end_date?: string;
   confirmed_at?: string;
@@ -68,8 +68,8 @@ export interface Task {
   type: TaskType;
   status: TaskStatus;
   priority: TaskPriority;
-  assignee?: User;
-  reviewer?: User;
+  assignees?: User[];  // Changed from assignee to assignees (array)
+  reviewers?: User[];  // Changed from reviewer to reviewers (array)
   due_date?: string;
   completed_at?: string;
   created_by: User;

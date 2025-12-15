@@ -8,19 +8,68 @@ import { requirePageAccess } from '@/lib/page-access';
 type ProjectInsert = Database['public']['Tables']['projects']['Insert'];
 type ProjectUpdate = Database['public']['Tables']['projects']['Update'];
 
-export async function createProject(data: ProjectInsert) {
+export async function createProject(
+  data: ProjectInsert & {
+    sales_person_ids?: string[];
+    ae_ids?: string[];
+  }
+) {
   try {
     await requirePageAccess('projects');
 
     const supabase = await createClient();
 
+    // Get current user ID
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    // Extract multi-user fields
+    const { sales_person_ids, ae_ids, ...projectData } = data;
+
     const { data: project, error } = await supabase
       .from('projects')
-      .insert(data)
+      .insert({
+        ...projectData,
+        created_by: user.id,
+      })
       .select()
       .single();
 
     if (error) throw error;
+
+    // Insert sales persons into junction table
+    if (sales_person_ids && sales_person_ids.length > 0) {
+      const { error: salesError } = await supabase
+        .from('project_sales_persons')
+        .insert(
+          sales_person_ids.map(userId => ({
+            project_id: project.id,
+            user_id: userId,
+          }))
+        );
+
+      if (salesError) {
+        console.error('Error inserting sales persons:', salesError);
+      }
+    }
+
+    // Insert account executives into junction table
+    if (ae_ids && ae_ids.length > 0) {
+      const { error: aeError } = await supabase
+        .from('project_account_executives')
+        .insert(
+          ae_ids.map(userId => ({
+            project_id: project.id,
+            user_id: userId,
+          }))
+        );
+
+      if (aeError) {
+        console.error('Error inserting account executives:', aeError);
+      }
+    }
 
     revalidatePath('/dashboard/projects');
     return { success: true, data: project };
@@ -30,20 +79,79 @@ export async function createProject(data: ProjectInsert) {
   }
 }
 
-export async function updateProject(id: string, data: ProjectUpdate) {
+export async function updateProject(
+  id: string,
+  data: ProjectUpdate & {
+    sales_person_ids?: string[];
+    ae_ids?: string[];
+  }
+) {
   try {
     await requirePageAccess('projects');
 
     const supabase = await createClient();
 
+    // Extract multi-user fields
+    const { sales_person_ids, ae_ids, ...projectData } = data;
+
     const { data: project, error } = await supabase
       .from('projects')
-      .update(data)
+      .update(projectData)
       .eq('id', id)
       .select()
       .single();
 
     if (error) throw error;
+
+    // Update sales persons: delete existing and insert new ones
+    if (sales_person_ids !== undefined) {
+      // Delete existing sales persons
+      await supabase
+        .from('project_sales_persons')
+        .delete()
+        .eq('project_id', id);
+
+      // Insert new sales persons
+      if (sales_person_ids.length > 0) {
+        const { error: salesError } = await supabase
+          .from('project_sales_persons')
+          .insert(
+            sales_person_ids.map(userId => ({
+              project_id: id,
+              user_id: userId,
+            }))
+          );
+
+        if (salesError) {
+          console.error('Error updating sales persons:', salesError);
+        }
+      }
+    }
+
+    // Update account executives: delete existing and insert new ones
+    if (ae_ids !== undefined) {
+      // Delete existing account executives
+      await supabase
+        .from('project_account_executives')
+        .delete()
+        .eq('project_id', id);
+
+      // Insert new account executives
+      if (ae_ids.length > 0) {
+        const { error: aeError } = await supabase
+          .from('project_account_executives')
+          .insert(
+            ae_ids.map(userId => ({
+              project_id: id,
+              user_id: userId,
+            }))
+          );
+
+        if (aeError) {
+          console.error('Error updating account executives:', aeError);
+        }
+      }
+    }
 
     revalidatePath('/dashboard/projects');
     revalidatePath(`/dashboard/projects/${id}`);

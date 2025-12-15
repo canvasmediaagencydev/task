@@ -17,10 +17,14 @@ export async function fetchTasks(): Promise<Task[]> {
       *,
       project:projects(
         *,
-        client:clients(*)
+        client:clients(*),
+        project_sales_persons(users(*)),
+        project_account_executives(users(*))
       ),
       assignee:users!tasks_assignee_id_fkey(*),
       reviewer:users!tasks_reviewer_id_fkey(*),
+      task_assignees(users(*)),
+      task_reviewers(users(*)),
       created_by_user:users!tasks_created_by_fkey(*)
     `)
     .or(`assignee_id.eq.${user.id},created_by.eq.${user.id}`)
