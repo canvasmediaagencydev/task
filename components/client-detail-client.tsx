@@ -48,6 +48,7 @@ export function ClientDetailClient({ client, projects }: ClientDetailClientProps
       if (result.success) {
         toast.success('Client deleted successfully');
         router.push('/dashboard/clients');
+        router.refresh();
       } else {
         toast.error(result.error || 'Failed to delete client');
       }

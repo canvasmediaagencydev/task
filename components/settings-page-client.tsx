@@ -11,6 +11,7 @@ import { UserPlus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { fetchUsersWithPageAccess, updateUserPageAccess } from '@/app/actions/page-access';
 import { createUserByAdmin, deleteUserByAdmin } from '@/app/actions/auth';
+import { ChangePasswordForm } from '@/components/change-password-form';
 import type { PageName } from '@/lib/page-access';
 
 interface UserWithAccess {
@@ -151,6 +152,8 @@ export function SettingsPageClient({ initialUsers }: SettingsPageClientProps) {
         <h1 className="text-3xl font-bold">Settings</h1>
         <p className="text-muted-foreground">Manage users and page access</p>
       </div>
+
+      <ChangePasswordForm />
 
       <Card>
         <CardHeader>

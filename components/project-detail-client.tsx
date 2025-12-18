@@ -105,6 +105,7 @@ export function ProjectDetailClient({ project, tasks, salesPersons, accountExecu
       if (result.success) {
         toast.success('Project deleted successfully');
         router.push('/dashboard/projects');
+        router.refresh();
       } else {
         toast.error(result.error || 'Failed to delete project');
       }
