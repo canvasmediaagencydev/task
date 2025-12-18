@@ -7,12 +7,23 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { UserPlus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { fetchUsersWithPageAccess, updateUserPageAccess } from '@/app/actions/page-access';
 import { createUserByAdmin, deleteUserByAdmin } from '@/app/actions/auth';
 import { ChangePasswordForm } from '@/components/change-password-form';
+import { PositionsManagement } from '@/components/positions-management';
 import type { PageName } from '@/lib/page-access';
+import type { Database } from '@/database.types';
+
+type Position = Database['public']['Tables']['positions']['Row'];
 
 interface UserWithAccess {
   id: string;
@@ -23,6 +34,7 @@ interface UserWithAccess {
 
 interface SettingsPageClientProps {
   initialUsers: UserWithAccess[];
+  initialPositions: Position[];
 }
 
 const ALL_PAGES: PageName[] = ['dashboard', 'tasks', 'projects', 'team', 'clients', 'settings'];
@@ -36,7 +48,7 @@ const PAGE_LABELS: Record<PageName, string> = {
   settings: 'Settings',
 };
 
-export function SettingsPageClient({ initialUsers }: SettingsPageClientProps) {
+export function SettingsPageClient({ initialUsers, initialPositions }: SettingsPageClientProps) {
   const [users, setUsers] = useState<UserWithAccess[]>(initialUsers);
   const [loading, setLoading] = useState(false);
 
@@ -46,6 +58,7 @@ export function SettingsPageClient({ initialUsers }: SettingsPageClientProps) {
   const [newUserPassword, setNewUserPassword] = useState('');
   const [newUserFullName, setNewUserFullName] = useState('');
   const [newUserPages, setNewUserPages] = useState<PageName[]>([]);
+  const [newUserPositionId, setNewUserPositionId] = useState<string>('');
 
   // Edit page access state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -72,7 +85,8 @@ export function SettingsPageClient({ initialUsers }: SettingsPageClientProps) {
     const result = await createUserByAdmin(
       newUserEmail,
       newUserPassword,
-      newUserFullName
+      newUserFullName,
+      newUserPositionId || undefined
     );
 
     if (result.success) {
@@ -87,6 +101,7 @@ export function SettingsPageClient({ initialUsers }: SettingsPageClientProps) {
       setNewUserPassword('');
       setNewUserFullName('');
       setNewUserPages([]);
+      setNewUserPositionId('');
       void loadData();
     } else {
       toast.error(result.error);
@@ -150,10 +165,12 @@ export function SettingsPageClient({ initialUsers }: SettingsPageClientProps) {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-muted-foreground">Manage users and page access</p>
+        <p className="text-muted-foreground">Manage users, positions, and page access</p>
       </div>
 
       <ChangePasswordForm />
+
+      <PositionsManagement initialPositions={initialPositions} />
 
       <Card>
         <CardHeader>
@@ -264,6 +281,24 @@ export function SettingsPageClient({ initialUsers }: SettingsPageClientProps) {
                 onChange={(e) => setNewUserPassword(e.target.value)}
                 placeholder="••••••••"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="position">Position</Label>
+              <Select
+                value={newUserPositionId}
+                onValueChange={setNewUserPositionId}
+              >
+                <SelectTrigger id="position">
+                  <SelectValue placeholder="Select position (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {initialPositions.filter(p => p.is_active).map((position) => (
+                    <SelectItem key={position.id} value={position.id}>
+                      {position.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Page Access</Label>

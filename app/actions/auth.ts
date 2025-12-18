@@ -125,7 +125,8 @@ export async function signOut() {
 export async function createUserByAdmin(
   email: string,
   password: string,
-  fullName: string
+  fullName: string,
+  positionId?: string
 ) {
   'use server';
 
@@ -186,6 +187,7 @@ export async function createUserByAdmin(
       id: authData.user.id,
       email: authData.user.email!,
       full_name: fullName,
+      position_id: positionId || null,
       is_active: true,
     });
 

@@ -29,6 +29,11 @@ export interface TeamMember extends User {
   utilization?: number;
   current_projects?: number;
   focus_areas?: string[];
+  position?: {
+    id: string;
+    name: string;
+    color: string | null;
+  } | null;
 }
 
 export interface Client {

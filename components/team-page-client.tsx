@@ -4,6 +4,7 @@ import { TeamMember } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 
 interface TeamPageClientProps {
   team: TeamMember[];
@@ -28,7 +29,7 @@ export function TeamPageClient({ team }: TeamPageClientProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Role</TableHead>
+                  <TableHead>Position</TableHead>
                   <TableHead>Department</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Location</TableHead>
@@ -48,7 +49,22 @@ export function TeamPageClient({ team }: TeamPageClientProps) {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{member.role || '–'}</TableCell>
+                    <TableCell>
+                      {member.position ? (
+                        <Badge
+                          variant="outline"
+                          className="font-normal"
+                          style={{
+                            borderColor: member.position.color || '#3b82f6',
+                            color: member.position.color || '#3b82f6',
+                          }}
+                        >
+                          {member.position.name}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">–</span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">{member.department || '–'}</TableCell>
                     <TableCell className="text-muted-foreground">{member.email}</TableCell>
                     <TableCell className="text-muted-foreground">{member.location || '–'}</TableCell>

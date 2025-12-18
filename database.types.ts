@@ -257,6 +257,36 @@ export type Database = {
         }
         Relationships: []
       }
+      positions: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       project_account_executives: {
         Row: {
           created_at: string | null
@@ -510,6 +540,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "task_assignees_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "user_visible_tasks"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "task_assignees_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -552,6 +589,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "task_comments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "user_visible_tasks"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "task_comments_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -585,6 +629,13 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_reviewers_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "user_visible_tasks"
             referencedColumns: ["id"]
           },
           {
@@ -671,6 +722,13 @@ export type Database = {
             columns: ["parent_task_id"]
             isOneToOne: false
             referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "user_visible_tasks"
             referencedColumns: ["id"]
           },
           {
@@ -761,6 +819,7 @@ export type Database = {
           full_name: string
           id: string
           is_active: boolean | null
+          position_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -770,6 +829,7 @@ export type Database = {
           full_name: string
           id: string
           is_active?: boolean | null
+          position_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -779,9 +839,18 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean | null
+          position_id?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "users_position_id_fkey"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "positions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       weekly_cycles: {
         Row: {
@@ -839,7 +908,77 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      user_visible_tasks: {
+        Row: {
+          assignee_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          due_date: string | null
+          id: string | null
+          parent_task_id: string | null
+          priority: string | null
+          project_id: string | null
+          reviewer_id: string | null
+          status: string | null
+          title: string | null
+          type: string | null
+          updated_at: string | null
+          weekly_cycle_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "user_visible_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_weekly_cycle_id_fkey"
+            columns: ["weekly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_role: {

@@ -9,6 +9,7 @@ export async function fetchTeamMembers(): Promise<{ team: TeamMember[] }> {
     .from('users')
     .select(`
       *,
+      position:positions(id, name, color),
       assigned_tasks:tasks!tasks_assignee_id_fkey(id, status, project_id),
       reviewing_tasks:tasks!tasks_reviewer_id_fkey(id, status)
     `)
@@ -23,6 +24,7 @@ export async function fetchTeamMembers(): Promise<{ team: TeamMember[] }> {
   type TeamMemberRow = Database['public']['Tables']['users']['Row'] & {
     assigned_tasks: Database['public']['Tables']['tasks']['Row'][];
     reviewing_tasks: Database['public']['Tables']['tasks']['Row'][];
+    position: Database['public']['Tables']['positions']['Row'] | null;
   };
 
   const team: TeamMember[] = (data || []).map((member) => {
@@ -50,6 +52,7 @@ export async function fetchTeamMembers(): Promise<{ team: TeamMember[] }> {
       utilization,
       current_projects: activeProjects,
       focus_areas: assignedTasks.length > 0 ? ['Campaign Ops'] : [],
+      position: typedMember.position,
     };
   });
 
