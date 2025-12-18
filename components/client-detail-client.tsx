@@ -47,8 +47,8 @@ export function ClientDetailClient({ client, projects }: ClientDetailClientProps
 
       if (result.success) {
         toast.success('Client deleted successfully');
-        router.push('/dashboard/clients');
-        router.refresh();
+        // Use window.location for full page refresh to ensure UI updates
+        window.location.href = '/dashboard/clients';
       } else {
         toast.error(result.error || 'Failed to delete client');
       }
