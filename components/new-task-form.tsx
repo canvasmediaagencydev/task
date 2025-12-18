@@ -28,9 +28,11 @@ type LinkAttachment = {
 
 interface NewTaskFormProps {
   users: User[];
+  projects: Array<{ id: string; name: string }>;
+  initialProjectId?: string;
 }
 
-export function NewTaskForm({ users }: NewTaskFormProps) {
+export function NewTaskForm({ users, projects, initialProjectId }: NewTaskFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
@@ -49,6 +51,7 @@ export function NewTaskForm({ users }: NewTaskFormProps) {
     status: 'backlog' as TaskStatus,
     priority: 'normal' as TaskPriority,
     due_date: '',
+    project_id: initialProjectId || '',
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -56,6 +59,11 @@ export function NewTaskForm({ users }: NewTaskFormProps) {
 
     if (!formData.title.trim()) {
       toast.error('Title is required');
+      return;
+    }
+
+    if (!formData.project_id) {
+      toast.error('Project is required');
       return;
     }
 
@@ -67,6 +75,7 @@ export function NewTaskForm({ users }: NewTaskFormProps) {
         status: formData.status,
         priority: formData.priority,
         due_date: formData.due_date || null,
+        project_id: formData.project_id,
         assignee_ids: assigneeIds,
         reviewer_ids: reviewerIds,
         links: links.length > 0 ? links : undefined,
@@ -120,6 +129,34 @@ export function NewTaskForm({ users }: NewTaskFormProps) {
               }
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="project">Project *</Label>
+            <Select
+              value={formData.project_id}
+              onValueChange={(value) =>
+                setFormData({ ...formData, project_id: value })
+              }
+              required
+            >
+              <SelectTrigger id="project">
+                <SelectValue placeholder="Select a project" />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.length === 0 ? (
+                  <SelectItem value="" disabled>
+                    No active projects available
+                  </SelectItem>
+                ) : (
+                  projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">

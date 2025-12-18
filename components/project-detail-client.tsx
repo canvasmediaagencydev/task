@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import type { Task } from '@/lib/types';
+import type { Task, User } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +26,10 @@ import {
   FileImage,
   Link2,
   MessageSquare,
+  ExternalLink,
+  Edit,
+  StickyNote,
+  CheckCircle,
 } from 'lucide-react';
 
 type ProjectRow = Database['public']['Tables']['projects']['Row'] & {
@@ -33,11 +37,21 @@ type ProjectRow = Database['public']['Tables']['projects']['Row'] & {
   sales_person: Database['public']['Tables']['users']['Row'] | null;
   ae: Database['public']['Tables']['users']['Row'] | null;
   pipeline_stage: Database['public']['Tables']['pipeline_stages']['Row'] | null;
+  created_by_user: Database['public']['Tables']['users']['Row'] | null;
+  project_sales_persons?: Array<{
+    users: Database['public']['Tables']['users']['Row'] | null;
+  }>;
+  project_account_executives?: Array<{
+    users: Database['public']['Tables']['users']['Row'] | null;
+  }>;
 };
 
 interface ProjectDetailClientProps {
   project: ProjectRow;
   tasks: Task[];
+  salesPersons?: User[];
+  accountExecutives?: User[];
+  attachments: Database['public']['Tables']['attachments']['Row'][];
 }
 
 const statusStyles: Record<string, string> = {
@@ -46,7 +60,7 @@ const statusStyles: Record<string, string> = {
   done: 'bg-blue-500 text-white dark:bg-blue-600 dark:text-white',
 };
 
-export function ProjectDetailClient({ project, tasks }: ProjectDetailClientProps) {
+export function ProjectDetailClient({ project, tasks, salesPersons, accountExecutives, attachments }: ProjectDetailClientProps) {
   const router = useRouter();
   const projectStatus = project.status || 'active';
 
@@ -96,15 +110,35 @@ export function ProjectDetailClient({ project, tasks }: ProjectDetailClientProps
               <p className="text-sm text-muted-foreground">Project overview</p>
               <h1 className="text-3xl font-semibold md:text-4xl">{project.name}</h1>
             </div>
-            <div className="space-y-1 text-sm text-muted-foreground">
+            <div className="space-y-2 text-sm text-muted-foreground">
               <p className="flex items-center gap-2">
                 <Building2 className="h-4 w-4" />
                 {project.client?.name}
               </p>
-              <p className="flex items-center gap-2 capitalize">
-                <Users className="h-4 w-4" />
-                {project.sales_person?.full_name || project.ae?.full_name || 'Unassigned'}
-              </p>
+              {salesPersons && salesPersons.length > 0 && (
+                <div className="flex items-start gap-2">
+                  <Users className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-xs uppercase text-muted-foreground/70">Sales</p>
+                    <p>{salesPersons.map(sp => sp.full_name).join(', ')}</p>
+                  </div>
+                </div>
+              )}
+              {accountExecutives && accountExecutives.length > 0 && (
+                <div className="flex items-start gap-2">
+                  <UserCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-xs uppercase text-muted-foreground/70">Account Executives</p>
+                    <p>{accountExecutives.map(ae => ae.full_name).join(', ')}</p>
+                  </div>
+                </div>
+              )}
+              {project.pipeline_stage && (
+                <p className="flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4" />
+                  {project.pipeline_stage.name}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex flex-col items-end gap-3 text-sm text-muted-foreground">
@@ -112,6 +146,12 @@ export function ProjectDetailClient({ project, tasks }: ProjectDetailClientProps
               {projectStatus.replace('_', ' ')}
             </Badge>
             <div className="flex flex-col items-end gap-2 text-right">
+              {project.confirmed_at && (
+                <span className="inline-flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle className="h-4 w-4" />
+                  Confirmed {formatDate(project.confirmed_at)}
+                </span>
+              )}
               {project.start_date && (
                 <span className="inline-flex items-center gap-2">
                   <CalendarDays className="h-4 w-4" />
@@ -166,6 +206,107 @@ export function ProjectDetailClient({ project, tasks }: ProjectDetailClientProps
               )}
             </CardContent>
           </Card>
+
+          {(project.internal_notes || project.qt_link || project.brief_link) && (
+            <Card className="rounded-3xl border bg-card/80 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-xl">Project Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {project.internal_notes && (
+                  <div className="rounded-2xl border bg-muted/40 p-4">
+                    <div className="flex items-center gap-2 text-sm font-medium mb-2">
+                      <StickyNote className="h-4 w-4 text-muted-foreground" />
+                      Internal Notes
+                    </div>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{project.internal_notes}</p>
+                  </div>
+                )}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {project.qt_link && (
+                    <Button
+                      variant="outline"
+                      className="justify-start"
+                      asChild
+                    >
+                      <a href={project.qt_link} target="_blank" rel="noopener noreferrer">
+                        <FileText className="mr-2 h-4 w-4" />
+                        QT Link
+                        <ExternalLink className="ml-auto h-4 w-4" />
+                      </a>
+                    </Button>
+                  )}
+                  {project.brief_link && (
+                    <Button
+                      variant="outline"
+                      className="justify-start"
+                      asChild
+                    >
+                      <a href={project.brief_link} target="_blank" rel="noopener noreferrer">
+                        <FileText className="mr-2 h-4 w-4" />
+                        Brief Link
+                        <ExternalLink className="ml-auto h-4 w-4" />
+                      </a>
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {attachments && attachments.length > 0 && (
+            <Card className="rounded-3xl border bg-card/80 shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-xl">Project Files</CardTitle>
+                <Button variant="outline" size="sm">
+                  <Link2 className="mr-2 h-4 w-4" />
+                  Add Link
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {attachments.map((attachment) => {
+                  const providerType = attachment.provider_type || 'other';
+                  const getIcon = (type: string) => {
+                    if (type.includes('google_drive')) return FileText;
+                    if (type.includes('google_docs')) return FileText;
+                    if (type.includes('google_sheets')) return FileSpreadsheet;
+                    if (type === 'figma' || type === 'canva') return FileImage;
+                    return Link2;
+                  };
+                  const Icon = getIcon(providerType);
+
+                  return (
+                    <div
+                      key={attachment.id}
+                      className="flex items-center justify-between rounded-2xl border bg-muted/40 p-4 hover:bg-muted/60"
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="rounded-lg bg-primary/10 p-2 flex-shrink-0">
+                          <Icon className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{attachment.title}</p>
+                          <p className="text-xs text-muted-foreground capitalize">
+                            {providerType.replace(/_/g, ' ')}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="flex-shrink-0"
+                        asChild
+                      >
+                        <a href={attachment.url} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <div className="space-y-6">
@@ -196,6 +337,50 @@ export function ProjectDetailClient({ project, tasks }: ProjectDetailClientProps
               )}
             </div>
           </div>
+
+          <Card className="rounded-3xl border bg-card/80 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg">Project Timeline</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              {project.created_at && (
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground">Created</p>
+                    <p>{formatDate(project.created_at)}</p>
+                  </div>
+                </div>
+              )}
+              {project.created_by_user && (
+                <div className="flex items-center gap-2">
+                  <UserCircle2 className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground">Created By</p>
+                    <p>{project.created_by_user.full_name}</p>
+                  </div>
+                </div>
+              )}
+              {project.confirmed_at && (
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground">Confirmed</p>
+                    <p className="text-emerald-600 dark:text-emerald-400">{formatDate(project.confirmed_at)}</p>
+                  </div>
+                </div>
+              )}
+              {project.updated_at && (
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground">Last Updated</p>
+                    <p>{formatDate(project.updated_at)}</p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           <Card className="rounded-3xl border bg-card/80 shadow-sm">
             <CardHeader>

@@ -13,7 +13,7 @@ export default async function ProjectDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [projectResult, tasksResult] = await Promise.all([
+  const [projectResult, tasksResult, attachmentsResult, createdByResult] = await Promise.all([
     supabase
       .from('projects')
       .select(`
@@ -23,7 +23,8 @@ export default async function ProjectDetailPage({
         ae:users!projects_ae_id_fkey(*),
         pipeline_stage:pipeline_stages(*),
         project_sales_persons(users(*)),
-        project_account_executives(users(*))
+        project_account_executives(users(*)),
+        created_by_user:users!projects_created_by_fkey(*)
       `)
       .eq('id', id)
       .single(),
@@ -39,6 +40,13 @@ export default async function ProjectDetailPage({
       `)
       .eq('project_id', id)
       .order('created_at', { ascending: false }),
+    supabase
+      .from('attachments')
+      .select('*')
+      .eq('entity_type', 'project')
+      .eq('entity_id', id)
+      .order('created_at', { ascending: false }),
+    supabase.auth.getUser(),
   ]);
 
   if (projectResult.error || !projectResult.data) {
@@ -50,6 +58,7 @@ export default async function ProjectDetailPage({
     sales_person: Database['public']['Tables']['users']['Row'] | null;
     ae: Database['public']['Tables']['users']['Row'] | null;
     pipeline_stage: Database['public']['Tables']['pipeline_stages']['Row'] | null;
+    created_by_user: Database['public']['Tables']['users']['Row'] | null;
     project_sales_persons?: Array<{
       users: Database['public']['Tables']['users']['Row'] | null;
     }>;
@@ -99,5 +108,15 @@ export default async function ProjectDetailPage({
     mapTaskRowToTask(task, { fallbackProject })
   );
 
-  return <ProjectDetailClient project={project} tasks={normalizedTasks} />;
+  const attachments = (attachmentsResult.data || []) as Database['public']['Tables']['attachments']['Row'][];
+
+  return (
+    <ProjectDetailClient
+      project={project}
+      tasks={normalizedTasks}
+      salesPersons={sales_persons}
+      accountExecutives={account_executives}
+      attachments={attachments}
+    />
+  );
 }

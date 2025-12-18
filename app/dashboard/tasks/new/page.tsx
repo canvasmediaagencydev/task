@@ -1,8 +1,16 @@
 import { NewTaskForm } from '@/components/new-task-form';
-import { fetchActiveUsers } from '@/lib/api';
+import { fetchActiveUsers, fetchActiveProjects } from '@/lib/api';
 
-export default async function NewTaskPage() {
-  const users = await fetchActiveUsers();
+export default async function NewTaskPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ projectId?: string }>;
+}) {
+  const params = await searchParams;
+  const [users, projects] = await Promise.all([
+    fetchActiveUsers(),
+    fetchActiveProjects(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -13,7 +21,11 @@ export default async function NewTaskPage() {
         </p>
       </div>
 
-      <NewTaskForm users={users} />
+      <NewTaskForm
+        users={users}
+        projects={projects}
+        initialProjectId={params.projectId}
+      />
     </div>
   );
 }

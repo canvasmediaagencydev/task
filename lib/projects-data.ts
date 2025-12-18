@@ -127,6 +127,22 @@ export async function fetchProjectsAndTasks(): Promise<{
     new Set(tasks.map((task) => task.project?.id).filter((id): id is string => Boolean(id)))
   );
 
+  // Find projects where user is assigned via junction tables
+  const [salesPersonProjects, aeProjects] = await Promise.all([
+    supabase
+      .from('project_sales_persons')
+      .select('project_id')
+      .eq('user_id', user.id),
+    supabase
+      .from('project_account_executives')
+      .select('project_id')
+      .eq('user_id', user.id),
+  ]);
+
+  const salesPersonProjectIds = (salesPersonProjects.data || []).map(row => row.project_id);
+  const aeProjectIds = (aeProjects.data || []).map(row => row.project_id);
+  const junctionProjectIds = [...new Set([...salesPersonProjectIds, ...aeProjectIds])];
+
   const baseQuery = supabase
     .from('projects')
     .select(`
@@ -145,9 +161,16 @@ export async function fetchProjectsAndTasks(): Promise<{
     `sales_person_id.eq.${user.id}`,
   ];
 
+  // Add project IDs from tasks
   if (projectIds.length > 0) {
     const formattedIds = projectIds.map((id) => `"${id}"`).join(',');
     orFilters.push(`id.in.(${formattedIds})`);
+  }
+
+  // Add project IDs from junction tables (multi-user assignments)
+  if (junctionProjectIds.length > 0) {
+    const formattedJunctionIds = junctionProjectIds.map((id) => `"${id}"`).join(',');
+    orFilters.push(`id.in.(${formattedJunctionIds})`);
   }
 
   const query = orFilters.length > 0

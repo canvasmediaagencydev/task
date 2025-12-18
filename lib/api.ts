@@ -236,6 +236,23 @@ export async function fetchActiveUsers(): Promise<User[]> {
     .filter((user): user is User => Boolean(user));
 }
 
+export async function fetchActiveProjects(): Promise<Array<{ id: string; name: string }>> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('projects')
+    .select('id, name')
+    .eq('status', 'active')
+    .order('name');
+
+  if (error) {
+    console.error('Error fetching projects:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
 // Update task status
 export async function updateTaskStatus(taskId: string, status: TaskStatus) {
   const supabase = await createClient();
