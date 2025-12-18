@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
+import { playNotificationSound } from '@/lib/notification-sound';
 
 export interface NotificationItem {
   id: string;
@@ -27,6 +28,8 @@ export function useNotifications() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const previousUnreadCountRef = useRef<number>(0);
+  const isInitializedRef = useRef<boolean>(false);
   type LoadOptions = {
     silent?: boolean;
   };
@@ -70,7 +73,17 @@ export function useNotifications() {
         return;
       }
 
-      setUnreadCount(payload?.count ?? 0);
+      const newCount = payload?.count ?? 0;
+      const previousCount = previousUnreadCountRef.current;
+
+      // Play sound if unread count increased AND we've finished initializing
+      // This prevents sound on initial page load but allows it for new notifications
+      if (newCount > previousCount && isInitializedRef.current) {
+        playNotificationSound();
+      }
+
+      previousUnreadCountRef.current = newCount;
+      setUnreadCount(newCount);
     } catch (error) {
       console.error('Failed to load unread notification count', error);
     }
@@ -153,6 +166,9 @@ export function useNotifications() {
       if (!isMounted) {
         return;
       }
+
+      // Mark as initialized after first load - now we can play sounds for new notifications
+      isInitializedRef.current = true;
 
       unsubscribe = subscribeToNotifications(user.id);
     }

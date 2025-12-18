@@ -41,6 +41,11 @@ export async function createTask(data: {
   assignee_ids?: string[];
   reviewer_ids?: string[];
   project_id?: string | null;
+  links?: Array<{
+    title: string;
+    url: string;
+    provider_type: string;
+  }>;
 }) {
   await requirePageAccess('tasks');
 
@@ -104,6 +109,27 @@ export async function createTask(data: {
 
     if (reviewerError) {
       console.error('Error inserting reviewers:', reviewerError);
+    }
+  }
+
+  // Insert attachments/links
+  if (data.links && data.links.length > 0) {
+    const { error: linksError } = await supabase
+      .from('attachments')
+      .insert(
+        data.links.map(link => ({
+          entity_type: 'task',
+          entity_id: task.id,
+          title: link.title,
+          url: link.url,
+          provider_type: link.provider_type,
+          created_by: user.id,
+        }))
+      );
+
+    if (linksError) {
+      console.error('Error inserting attachments:', linksError);
+      // Note: Task already created, don't fail the whole operation
     }
   }
 

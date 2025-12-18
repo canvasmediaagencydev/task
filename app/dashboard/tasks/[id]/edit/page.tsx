@@ -17,8 +17,11 @@ export default async function EditTaskPage({
     .select(`
       *,
       project:projects(id, name),
-      assignee:users!tasks_assignee_id_fkey(id, full_name, avatar_url),
-      created_by_user:users!tasks_created_by_fkey(id, full_name, avatar_url)
+      assignee:users!tasks_assignee_id_fkey(*),
+      reviewer:users!tasks_reviewer_id_fkey(*),
+      created_by_user:users!tasks_created_by_fkey(*),
+      task_assignees(users(*)),
+      task_reviewers(users(*))
     `)
     .eq('id', id)
     .single();

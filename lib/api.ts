@@ -11,8 +11,10 @@ export async function fetchTasks(): Promise<Task[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const { data: tasksData, error } = await supabase
-    .from('tasks')
+  // Query user_visible_tasks view (returns same structure as tasks table)
+  // Type cast to 'any' to avoid TypeScript depth errors with views
+  const { data: tasksData, error } = await (supabase
+    .from('user_visible_tasks' as any)
     .select(`
       *,
       project:projects(
@@ -27,8 +29,7 @@ export async function fetchTasks(): Promise<Task[]> {
       task_reviewers(users(*)),
       created_by_user:users!tasks_created_by_fkey(*)
     `)
-    .or(`assignee_id.eq.${user.id},created_by.eq.${user.id}`)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false }) as any);
 
   if (error) {
     console.error('Error fetching tasks:', error);
@@ -55,15 +56,14 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     };
   }
 
-  const { data: tasksData, error } = await supabase
-    .from('tasks')
+  const { data: tasksData, error } = await (supabase
+    .from('user_visible_tasks' as any)
     .select(`
       id,
       status,
       due_date,
       project:projects(id, status)
-    `)
-    .or(`assignee_id.eq.${user.id},created_by.eq.${user.id}`);
+    `) as any);
 
   if (error) {
     console.error('Error fetching dashboard stats:', error);
@@ -127,17 +127,16 @@ export async function fetchTaskStatusCounts(): Promise<TaskStatusCount[]> {
     return statuses.map((status) => ({ status, count: 0 }));
   }
 
-  const { data, error } = await supabase
-    .from('tasks')
-    .select('status')
-    .or(`assignee_id.eq.${user.id},created_by.eq.${user.id}`);
+  const { data, error } = await (supabase
+    .from('user_visible_tasks' as any)
+    .select('status') as any);
 
   if (error) {
     console.error('Error fetching task status counts:', error);
     return statuses.map((status) => ({ status, count: 0 }));
   }
 
-  const statusTotals = (data || []).reduce<Record<TaskStatus, number>>((acc, task) => {
+  const statusTotals = (data || []).reduce((acc: Record<TaskStatus, number>, task: any) => {
     const status = (task.status as TaskStatus) ?? 'backlog';
     acc[status] = (acc[status] || 0) + 1;
     return acc;
@@ -157,21 +156,20 @@ export async function fetchRecentActivities(): Promise<Activity[]> {
     return [];
   }
 
-  const { data: userTasks, error: tasksError } = await supabase
-    .from('tasks')
-    .select('id')
-    .or(`assignee_id.eq.${user.id},created_by.eq.${user.id}`);
+  const { data: userTasks, error: tasksError } = await (supabase
+    .from('user_visible_tasks' as any)
+    .select('id') as any);
 
   if (tasksError) {
     console.error('Error fetching user tasks for activities:', tasksError);
     return [];
   }
 
-  const taskIds = (userTasks || []).map((task) => task.id).filter(Boolean);
+  const taskIds = (userTasks || []).map((task: any) => task.id).filter(Boolean);
   const orFilters = [`created_by.eq.${user.id}`];
 
   if (taskIds.length > 0) {
-    const inClause = taskIds.map((id) => `"${id}"`).join(',');
+    const inClause = taskIds.map((id: string) => `"${id}"`).join(',');
     orFilters.push(`and(entity_type.eq.task,entity_id.in.(${inClause}))`);
   }
 
