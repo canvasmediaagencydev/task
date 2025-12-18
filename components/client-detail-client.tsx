@@ -1,11 +1,24 @@
 "use client";
 
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Edit, Mail, Phone, Building2, User, Calendar, ExternalLink } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { ArrowLeft, Edit, Mail, Phone, Building2, User, Calendar, ExternalLink, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { deleteClient } from '@/app/actions/clients';
+import { toast } from 'sonner';
 import type { Database } from '@/database.types';
 
 type ClientRow = Database['public']['Tables']['clients']['Row'];
@@ -22,9 +35,24 @@ interface ClientDetailClientProps {
 
 export function ClientDetailClient({ client, projects }: ClientDetailClientProps) {
   const router = useRouter();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const activeProjects = projects.filter((p) => p.status === 'active');
   const completedProjects = projects.filter((p) => p.status === 'done');
+
+  const handleDelete = () => {
+    startTransition(async () => {
+      const result = await deleteClient(client.id);
+
+      if (result.success) {
+        toast.success('Client deleted successfully');
+        router.push('/dashboard/clients');
+      } else {
+        toast.error(result.error || 'Failed to delete client');
+      }
+    });
+  };
 
   const getStatusBadge = (status?: string | null) => {
     const normalizedStatus = status ?? 'active';
@@ -55,10 +83,20 @@ export function ClientDetailClient({ client, projects }: ClientDetailClientProps
             )}
           </div>
         </div>
-        <Button variant="outline" onClick={() => router.push(`/dashboard/clients/${client.id}/edit`)}>
-          <Edit className="mr-2 h-4 w-4" />
-          Edit
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => router.push(`/dashboard/clients/${client.id}/edit`)}>
+            <Edit className="mr-2 h-4 w-4" />
+            Edit
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => setShowDeleteDialog(true)}
+            disabled={isPending}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -226,6 +264,32 @@ export function ClientDetailClient({ client, projects }: ClientDetailClientProps
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Client</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{client.name}"? This action cannot be undone.
+              {projects.length > 0 && (
+                <span className="block mt-2 text-destructive font-medium">
+                  Warning: This client has {projects.length} associated project{projects.length > 1 ? 's' : ''}.
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

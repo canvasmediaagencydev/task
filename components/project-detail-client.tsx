@@ -1,14 +1,26 @@
 "use client";
 
-import { useMemo } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Task, User } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { TasksTable } from '@/components/tasks-table';
 import { formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { deleteProject } from '@/app/actions/projects';
+import { toast } from 'sonner';
 import type { Database } from '@/database.types';
 import {
   ArrowLeft,
@@ -30,6 +42,7 @@ import {
   Edit,
   StickyNote,
   CheckCircle,
+  Trash2,
 } from 'lucide-react';
 
 type ProjectRow = Database['public']['Tables']['projects']['Row'] & {
@@ -63,6 +76,8 @@ const statusStyles: Record<string, string> = {
 export function ProjectDetailClient({ project, tasks, salesPersons, accountExecutives, attachments }: ProjectDetailClientProps) {
   const router = useRouter();
   const projectStatus = project.status || 'active';
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const stats = useMemo(() => {
     const total = tasks.length;
@@ -83,6 +98,19 @@ export function ProjectDetailClient({ project, tasks, salesPersons, accountExecu
     router.push(`/dashboard/tasks/${task.id}`);
   };
 
+  const handleDelete = () => {
+    startTransition(async () => {
+      const result = await deleteProject(project.id);
+
+      if (result.success) {
+        toast.success('Project deleted successfully');
+        router.push('/dashboard/projects');
+      } else {
+        toast.error(result.error || 'Failed to delete project');
+      }
+    });
+  };
+
   const contactEmail = project.client?.email || project.sales_person?.email || project.ae?.email;
   const contactPhone = project.client?.phone;
   const contactHref = contactEmail
@@ -94,14 +122,33 @@ export function ProjectDetailClient({ project, tasks, salesPersons, accountExecu
 
   return (
     <div className="space-y-8">
-      <Button
-        variant="ghost"
-        className="gap-2 text-muted-foreground hover:text-foreground"
-        onClick={() => router.back()}
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button
+          variant="ghost"
+          className="gap-2 text-muted-foreground hover:text-foreground"
+          onClick={() => router.back()}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => router.push(`/dashboard/projects/${project.id}/edit`)}
+          >
+            <Edit className="mr-2 h-4 w-4" />
+            Edit
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => setShowDeleteDialog(true)}
+            disabled={isPending}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
+          </Button>
+        </div>
+      </div>
 
       <div className="rounded-3xl border bg-card/80 p-6 shadow-sm md:p-10">
         <div className="flex flex-wrap items-start justify-between gap-6">
@@ -417,6 +464,28 @@ export function ProjectDetailClient({ project, tasks, salesPersons, accountExecu
           </Card>
         </div>
       </div>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Project</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{project.name}"? This action cannot be undone.
+              All tasks associated with this project will also be affected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
