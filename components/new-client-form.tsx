@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { createClient } from '@/app/actions/clients';
 import { toast } from 'sonner';
+import { ArrowLeft } from 'lucide-react';
 
 interface NewClientFormProps {
   onSuccess?: () => void;
@@ -132,6 +133,7 @@ export function NewClientForm({ onSuccess }: NewClientFormProps) {
 
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={() => router.back()}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Cancel
         </Button>
         <Button type="submit" disabled={loading}>

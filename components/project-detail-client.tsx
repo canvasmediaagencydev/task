@@ -83,10 +83,10 @@ export function ProjectDetailClient({ project, tasks }: ProjectDetailClientProps
       <Button
         variant="ghost"
         className="gap-2 text-muted-foreground hover:text-foreground"
-        onClick={() => router.push('/dashboard/projects')}
+        onClick={() => router.back()}
       >
         <ArrowLeft className="h-4 w-4" />
-        Projects
+        Back
       </Button>
 
       <div className="rounded-3xl border bg-card/80 p-6 shadow-sm md:p-10">

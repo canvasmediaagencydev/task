@@ -36,6 +36,7 @@ import { cn } from '@/lib/utils';
 import { deleteTask } from '@/app/actions/tasks';
 import { toast } from 'sonner';
 import {
+  ArrowLeft,
   Calendar,
   Flag,
   MoreHorizontal,
@@ -94,6 +95,14 @@ export function TaskDetailClient({
   return (
     <div className="space-y-6">
       <section className="rounded-3xl border bg-card/80 p-6 shadow-sm md:p-8">
+        <Button
+          variant="ghost"
+          onClick={() => router.back()}
+          className="mb-4"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">Projects / {projectName} / Task</p>

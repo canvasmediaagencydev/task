@@ -16,6 +16,7 @@ import {
 import { createProject, fetchPipelineStages } from '@/app/actions/projects';
 import { UserMultiSelect } from '@/components/ui/user-multi-select';
 import { toast } from 'sonner';
+import { ArrowLeft } from 'lucide-react';
 
 interface NewProjectFormProps {
   clients: Array<{ id: string; name: string }>;
@@ -260,6 +261,7 @@ export function NewProjectForm({ clients, users, onSuccess }: NewProjectFormProp
 
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={() => router.back()}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Cancel
         </Button>
         <Button type="submit" disabled={loading}>
