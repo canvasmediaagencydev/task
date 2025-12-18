@@ -41,9 +41,9 @@ interface ProjectDetailClientProps {
 }
 
 const statusStyles: Record<string, string> = {
-  active: 'bg-emerald-500/10 text-emerald-500',
-  on_hold: 'bg-amber-500/10 text-amber-500',
-  done: 'bg-blue-500/10 text-blue-500',
+  active: 'bg-emerald-500 text-white dark:bg-emerald-600 dark:text-white',
+  on_hold: 'bg-amber-500 text-white dark:bg-amber-600 dark:text-white',
+  done: 'bg-blue-500 text-white dark:bg-blue-600 dark:text-white',
 };
 
 export function ProjectDetailClient({ project, tasks }: ProjectDetailClientProps) {
@@ -151,31 +151,6 @@ export function ProjectDetailClient({ project, tasks }: ProjectDetailClientProps
         <div className="space-y-6">
           <Card className="rounded-3xl border bg-card/80 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-xl">Project Description</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Mock narrative content. Replace once real data is available.
-                </p>
-              </div>
-              <Button variant="outline" size="sm">
-                Edit project
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm leading-relaxed text-muted-foreground">
-              <p>
-                A comprehensive campaign to boost brand recognition for Client X in the third quarter. The
-                primary goal is to increase market share by 15% through a multi-channel approach including
-                social media, content marketing, and a targeted digital advertising strategy.
-              </p>
-              <p>
-                Key performance indicators will be tracked weekly, with a full report delivered at the end of
-                the campaign. This copy mirrors the design mock for now.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-3xl border bg-card/80 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-xl">Tasks</CardTitle>
               <Button size="sm" onClick={() => router.push(`/dashboard/tasks/new?projectId=${project.id}`)}>
                 Add task
@@ -189,82 +164,6 @@ export function ProjectDetailClient({ project, tasks }: ProjectDetailClientProps
                   No tasks are linked to this project yet.
                 </div>
               )}
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-3xl border bg-card/80 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-xl">Milestones</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              {[
-                {
-                  title: 'Kickoff & Discovery',
-                  date: 'Jul 15 - Jul 22',
-                  description: 'Initial client meetings, scope definition, and research phase.',
-                },
-                {
-                  title: 'Creative Development',
-                  date: 'Jul 23 - Aug 19',
-                  description: 'Concepting, copywriting, and visual design production.',
-                },
-                {
-                  title: 'Client Presentation',
-                  date: 'Aug 27',
-                  description: 'Review of creative assets and campaign strategy with the client.',
-                },
-                {
-                  title: 'Campaign Launch',
-                  date: 'Sep 9',
-                  description: 'Public launch across all selected marketing channels.',
-                },
-              ].map((milestone, index) => (
-                <div key={milestone.title} className="rounded-2xl border bg-muted/40 p-4">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Stage {index + 1}</p>
-                  <p className="mt-1 font-medium">{milestone.title}</p>
-                  <p className="text-sm text-muted-foreground">{milestone.date}</p>
-                  <p className="mt-2 text-sm text-muted-foreground">{milestone.description}</p>
-                </div>
-              ))}
-              <p className="text-xs text-muted-foreground">*Milestones currently mirror the mock design.</p>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-3xl border bg-card/80 shadow-sm">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-xl">Communications</CardTitle>
-                <Button variant="outline" size="sm">
-                  View all
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {[
-                {
-                  author: 'Marcus Cole',
-                  timestamp: '2 hours ago',
-                  message:
-                    'First draft of the social media copy is ready for review in the linked Google Doc. Let me know your thoughts!',
-                },
-                {
-                  author: 'Eleanor Vance',
-                  timestamp: 'Yesterday',
-                  message:
-                    'Client feedback on the initial mockups was very positive. Lena, great work! They just had a few minor color tweaks.',
-                },
-              ].map((comment) => (
-                <div key={comment.author} className="rounded-2xl border bg-muted/40 p-4">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                    {comment.author}
-                    <span className="text-xs text-muted-foreground">{comment.timestamp}</span>
-                  </div>
-                  <p className="mt-2 text-sm text-muted-foreground">{comment.message}</p>
-                </div>
-              ))}
-              <Button className="w-full">Post Comment</Button>
-              <p className="text-xs text-muted-foreground">*Comments are static placeholders.</p>
             </CardContent>
           </Card>
         </div>
@@ -296,69 +195,7 @@ export function ProjectDetailClient({ project, tasks }: ProjectDetailClientProps
                 </Button>
               )}
             </div>
-            <p className="mt-4 text-center text-xs text-white/60">*Contact CTA mirrors mockup.</p>
           </div>
-
-          <Card className="rounded-3xl border bg-card/80 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg">Team Members</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm">
-              {[
-                {
-                  label: 'Project Lead',
-                  value: project.ae?.full_name || 'Eleanor Vance',
-                  email: project.ae?.email || 'e.vance@agency.com',
-                },
-                {
-                  label: 'Copywriter',
-                  value: project.sales_person?.full_name || 'Marcus Cole',
-                  email: project.sales_person?.email || 'm.cole@agency.com',
-                },
-                {
-                  label: 'Art Director',
-                  value: 'Lena Petrova',
-                  email: 'l.petrova@agency.com',
-                },
-              ].map((member) => (
-                <div key={member.label} className="rounded-2xl border bg-muted/40 p-4">
-                  <p className="text-xs uppercase text-muted-foreground">{member.label}</p>
-                  <p className="font-medium">{member.value}</p>
-                  <p className="text-muted-foreground">{member.email}</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-3xl border bg-card/80 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">Linked Files</CardTitle>
-              <Button variant="outline" size="sm">
-                + Add link
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              {[
-                { label: 'Project Brief', icon: FileText },
-                { label: 'Landing Page Mockups', icon: FileImage },
-                { label: 'Social Media Graphics', icon: FileImage },
-                { label: 'Content Calendar', icon: FileSpreadsheet },
-                { label: 'Social Media Copy', icon: FileText },
-              ].map((item) => (
-                <button
-                  key={item.label}
-                  className="flex w-full items-center justify-between rounded-2xl border bg-muted/40 px-4 py-3 text-left transition hover:bg-muted/60"
-                  type="button"
-                >
-                  <span className="flex items-center gap-3">
-                    <item.icon className="h-4 w-4 text-muted-foreground" />
-                    {item.label}
-                  </span>
-                  <Link2 className="h-4 w-4 text-muted-foreground" />
-                </button>
-              ))}
-            </CardContent>
-          </Card>
 
           <Card className="rounded-3xl border bg-card/80 shadow-sm">
             <CardHeader>

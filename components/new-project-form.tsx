@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { createProject, fetchPipelineStages } from '@/app/actions/projects';
+import { createProject } from '@/app/actions/projects';
 import { UserMultiSelect } from '@/components/ui/user-multi-select';
 import { toast } from 'sonner';
 import { ArrowLeft } from 'lucide-react';
@@ -24,23 +24,14 @@ interface NewProjectFormProps {
   onSuccess?: () => void;
 }
 
-interface PipelineStage {
-  id: string;
-  name: string;
-  order_index: number;
-  color: string | null;
-}
-
 export function NewProjectForm({ clients, users, onSuccess }: NewProjectFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>([]);
   const [salesPersonIds, setSalesPersonIds] = useState<string[]>([]);
   const [aeIds, setAeIds] = useState<string[]>([]);
   const [formData, setFormData] = useState<{
     name: string;
     client_id: string;
-    pipeline_stage_id: string;
     status: 'active' | 'on_hold' | 'done';
     qt_link: string;
     brief_link: string;
@@ -50,7 +41,6 @@ export function NewProjectForm({ clients, users, onSuccess }: NewProjectFormProp
   }>({
     name: '',
     client_id: '',
-    pipeline_stage_id: '',
     status: 'active',
     qt_link: '',
     brief_link: '',
@@ -58,16 +48,6 @@ export function NewProjectForm({ clients, users, onSuccess }: NewProjectFormProp
     end_date: '',
     internal_notes: '',
   });
-
-  useEffect(() => {
-    async function loadPipelineStages() {
-      const result = await fetchPipelineStages();
-      if (result.success && result.data) {
-        setPipelineStages(result.data);
-      }
-    }
-    loadPipelineStages();
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +57,6 @@ export function NewProjectForm({ clients, users, onSuccess }: NewProjectFormProp
       const dataToSubmit = {
         ...formData,
         client_id: formData.client_id || null,
-        pipeline_stage_id: formData.pipeline_stage_id || null,
         qt_link: formData.qt_link || null,
         brief_link: formData.brief_link || null,
         start_date: formData.start_date || null,
@@ -122,44 +101,23 @@ export function NewProjectForm({ clients, users, onSuccess }: NewProjectFormProp
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="client_id">Client</Label>
-            <Select
-              value={formData.client_id}
-              onValueChange={(value) => setFormData({ ...formData, client_id: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select client" />
-              </SelectTrigger>
-              <SelectContent>
-                {clients.map((client) => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label htmlFor="pipeline_stage_id">Pipeline Stage</Label>
-            <Select
-              value={formData.pipeline_stage_id}
-              onValueChange={(value) => setFormData({ ...formData, pipeline_stage_id: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select stage" />
-              </SelectTrigger>
-              <SelectContent>
-                {pipelineStages.map((stage) => (
-                  <SelectItem key={stage.id} value={stage.id}>
-                    {stage.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div>
+          <Label htmlFor="client_id">Client</Label>
+          <Select
+            value={formData.client_id}
+            onValueChange={(value) => setFormData({ ...formData, client_id: value })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select client" />
+            </SelectTrigger>
+            <SelectContent>
+              {clients.map((client) => (
+                <SelectItem key={client.id} value={client.id}>
+                  {client.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
