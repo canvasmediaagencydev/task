@@ -12,9 +12,10 @@ interface KanbanColumnProps {
   title: string;
   tasks: Task[];
   onEditTask?: (task: Task) => void;
+  currentUserId?: string;
 }
 
-export function KanbanColumn({ id, title, tasks, onEditTask }: KanbanColumnProps) {
+export function KanbanColumn({ id, title, tasks, onEditTask, currentUserId }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id });
 
   return (
@@ -36,7 +37,7 @@ export function KanbanColumn({ id, title, tasks, onEditTask }: KanbanColumnProps
           strategy={verticalListSortingStrategy}
         >
           {tasks.map((task) => (
-            <SortableTaskCard key={task.id} task={task} onEdit={onEditTask} />
+            <SortableTaskCard key={task.id} task={task} onEdit={onEditTask} currentUserId={currentUserId} />
           ))}
         </SortableContext>
 

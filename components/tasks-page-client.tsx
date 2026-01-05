@@ -22,15 +22,17 @@ import { useTasks } from '@/lib/hooks/use-tasks';
 
 interface TasksPageClientProps {
   initialTasks: Task[];
+  currentUserId?: string;
 }
 
-export function TasksPageClient({ initialTasks }: TasksPageClientProps) {
+export function TasksPageClient({ initialTasks, currentUserId }: TasksPageClientProps) {
   const { tasks: realtimeTasks, loading } = useTasks();
   const tasks = loading && realtimeTasks.length === 0 ? initialTasks : realtimeTasks;
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilters, setStatusFilters] = useState<TaskStatus[]>([]);
   const [priorityFilters, setPriorityFilters] = useState<TaskPriority[]>([]);
+  const [roleFilter, setRoleFilter] = useState<'all' | 'assigned' | 'reviewing'>('all');
 
   const handleViewTask = (task: Task) => {
     router.push(`/dashboard/tasks/${task.id}`);
@@ -60,8 +62,19 @@ export function TasksPageClient({ initialTasks }: TasksPageClientProps) {
       filtered = filtered.filter((task) => priorityFilters.includes(task.priority));
     }
 
+    // Apply role filter
+    if (roleFilter === 'assigned' && currentUserId) {
+      filtered = filtered.filter((task) =>
+        task.assignees?.some(a => a?.id === currentUserId)
+      );
+    } else if (roleFilter === 'reviewing' && currentUserId) {
+      filtered = filtered.filter((task) =>
+        task.reviewers?.some(r => r?.id === currentUserId)
+      );
+    }
+
     return filtered;
-  }, [tasks, searchQuery, statusFilters, priorityFilters]);
+  }, [tasks, searchQuery, statusFilters, priorityFilters, roleFilter, currentUserId]);
 
   const toggleStatusFilter = (status: TaskStatus) => {
     setStatusFilters((prev) =>
@@ -78,10 +91,11 @@ export function TasksPageClient({ initialTasks }: TasksPageClientProps) {
   const clearFilters = () => {
     setStatusFilters([]);
     setPriorityFilters([]);
+    setRoleFilter('all');
     setSearchQuery('');
   };
 
-  const hasActiveFilters = statusFilters.length > 0 || priorityFilters.length > 0 || searchQuery;
+  const hasActiveFilters = statusFilters.length > 0 || priorityFilters.length > 0 || roleFilter !== 'all' || searchQuery;
 
   return (
     <div className="space-y-6">
@@ -110,7 +124,7 @@ export function TasksPageClient({ initialTasks }: TasksPageClientProps) {
                 Filter
                 {hasActiveFilters && (
                   <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
-                    {statusFilters.length + priorityFilters.length}
+                    {statusFilters.length + priorityFilters.length + (roleFilter !== 'all' ? 1 : 0)}
                   </span>
                 )}
               </Button>
@@ -189,6 +203,28 @@ export function TasksPageClient({ initialTasks }: TasksPageClientProps) {
                 Urgent
               </DropdownMenuCheckboxItem>
 
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Filter by Role</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuCheckboxItem
+                checked={roleFilter === 'all'}
+                onCheckedChange={() => setRoleFilter('all')}
+              >
+                All Tasks
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={roleFilter === 'assigned'}
+                onCheckedChange={() => setRoleFilter('assigned')}
+              >
+                Assigned to Me
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={roleFilter === 'reviewing'}
+                onCheckedChange={() => setRoleFilter('reviewing')}
+              >
+                Reviewing
+              </DropdownMenuCheckboxItem>
+
               {hasActiveFilters && (
                 <>
                   <DropdownMenuSeparator />
@@ -233,6 +269,7 @@ export function TasksPageClient({ initialTasks }: TasksPageClientProps) {
             tasks={filteredTasks}
             onEditTask={handleViewTask}
             statusFilters={statusFilters}
+            currentUserId={currentUserId}
           />
         </TabsContent>
 

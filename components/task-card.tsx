@@ -19,10 +19,15 @@ interface TaskCardProps {
   task: Task;
   isDragging?: boolean;
   onEdit?: (task: Task) => void;
+  currentUserId?: string;
 }
 
-export function TaskCard({ task, isDragging, onEdit }: TaskCardProps) {
+export function TaskCard({ task, isDragging, onEdit, currentUserId }: TaskCardProps) {
   const overdue = task.due_date && isOverdue(task.due_date) && task.status !== 'done';
+
+  // Check if current user is assigned or reviewing
+  const isAssigned = currentUserId && task.assignees?.some(a => a.id === currentUserId);
+  const isReviewer = currentUserId && task.reviewers?.some(r => r.id === currentUserId);
 
   const handleClick = (e: React.MouseEvent) => {
     if (onEdit) {
@@ -64,7 +69,23 @@ export function TaskCard({ task, isDragging, onEdit }: TaskCardProps) {
                 {task.project.name}
               </Badge>
             )}
+            {isAssigned && (
+              <Badge variant="secondary" className="text-xs">
+                Assigned to you
+              </Badge>
+            )}
+            {isReviewer && (
+              <Badge variant="secondary" className="text-xs">
+                Reviewing
+              </Badge>
+            )}
           </div>
+
+          {task.created_by && (
+            <div className="text-xs text-muted-foreground">
+              Created by {task.created_by.full_name}
+            </div>
+          )}
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1">

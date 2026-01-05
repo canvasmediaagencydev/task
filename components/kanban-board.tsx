@@ -30,9 +30,10 @@ interface KanbanBoardProps {
   tasks: Task[];
   onEditTask?: (task: Task) => void;
   statusFilters?: TaskStatus[];
+  currentUserId?: string;
 }
 
-export function KanbanBoard({ tasks, onEditTask, statusFilters = [] }: KanbanBoardProps) {
+export function KanbanBoard({ tasks, onEditTask, statusFilters = [], currentUserId }: KanbanBoardProps) {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [localTasks, setLocalTasks] = useState(tasks);
   const [, startTransition] = useTransition();
@@ -142,6 +143,7 @@ export function KanbanBoard({ tasks, onEditTask, statusFilters = [] }: KanbanBoa
             title={column.title}
             tasks={getTasksByStatus(column.id)}
             onEditTask={onEditTask}
+            currentUserId={currentUserId}
           />
         ))}
       </div>

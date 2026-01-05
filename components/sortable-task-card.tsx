@@ -8,9 +8,10 @@ import { TaskCard } from './task-card';
 interface SortableTaskCardProps {
   task: Task;
   onEdit?: (task: Task) => void;
+  currentUserId?: string;
 }
 
-export function SortableTaskCard({ task, onEdit }: SortableTaskCardProps) {
+export function SortableTaskCard({ task, onEdit, currentUserId }: SortableTaskCardProps) {
   const {
     attributes,
     listeners,
@@ -27,7 +28,7 @@ export function SortableTaskCard({ task, onEdit }: SortableTaskCardProps) {
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <TaskCard task={task} isDragging={isDragging} onEdit={onEdit} />
+      <TaskCard task={task} isDragging={isDragging} onEdit={onEdit} currentUserId={currentUserId} />
     </div>
   );
 }

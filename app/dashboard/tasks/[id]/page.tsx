@@ -13,6 +13,9 @@ export default async function TaskDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser();
+
   const [taskResult, attachmentsResult, commentsResult] = await Promise.all([
     supabase
       .from('tasks')
@@ -66,6 +69,7 @@ export default async function TaskDetailPage({
       task={normalizedTask}
       attachments={attachments}
       initialComments={comments}
+      currentUserId={user?.id}
     />
   );
 }

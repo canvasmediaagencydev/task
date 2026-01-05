@@ -61,12 +61,14 @@ interface TaskDetailClientProps {
     }
   >;
   initialComments?: TaskComment[];
+  currentUserId?: string;
 }
 
 export function TaskDetailClient({
   task: initialTask,
   attachments = [],
   initialComments = [],
+  currentUserId,
 }: TaskDetailClientProps) {
   const router = useRouter();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -74,10 +76,15 @@ export function TaskDetailClient({
   const [isPending, startTransition] = useTransition();
 
   const assignees = initialTask.assignees || [];
+  const reviewers = initialTask.reviewers || [];
   const projectName = initialTask.project?.name || 'Project';
   const createdBy = initialTask.created_by;
   const overdue =
     initialTask.due_date && isOverdue(initialTask.due_date) && initialTask.status !== 'done';
+
+  // Check if current user is assigned or reviewing
+  const isAssigned = currentUserId ? assignees.some(a => a?.id === currentUserId) : false;
+  const isReviewer = currentUserId ? reviewers.some(r => r?.id === currentUserId) : false;
 
   const handleDeleteTask = async () => {
     startTransition(async () => {
@@ -114,6 +121,20 @@ export function TaskDetailClient({
                 <p className="max-w-3xl text-muted-foreground">
                   {initialTask.description}
                 </p>
+              )}
+              {(isAssigned || isReviewer) && (
+                <div className="flex gap-2">
+                  {isAssigned && (
+                    <Badge variant="secondary" className="text-xs">
+                      You're assigned
+                    </Badge>
+                  )}
+                  {isReviewer && (
+                    <Badge variant="secondary" className="text-xs">
+                      You're reviewing
+                    </Badge>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -300,6 +321,54 @@ export function TaskDetailClient({
                     </div>
                   ) : (
                     <p className="mt-2 text-muted-foreground">Unassigned</p>
+                  )}
+                </div>
+
+                {reviewers.length > 0 && (
+                  <div>
+                    <p className="text-xs uppercase text-muted-foreground">Reviewers</p>
+                    <div className="mt-2 space-y-2">
+                      {reviewers.map((reviewer) => (
+                        <div key={reviewer.id} className="flex items-center gap-3">
+                          <Avatar className="h-9 w-9">
+                            <AvatarImage src={reviewer.avatar_url} alt={reviewer.full_name} />
+                            <AvatarFallback>
+                              {reviewer.full_name
+                                .split(' ')
+                                .map((n) => n[0])
+                                .join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{reviewer.full_name}</p>
+                            <p className="text-xs text-muted-foreground">{reviewer.email}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <p className="text-xs uppercase text-muted-foreground">Created by</p>
+                  {createdBy ? (
+                    <div className="mt-2 flex items-center gap-3">
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={createdBy.avatar_url} alt={createdBy.full_name} />
+                        <AvatarFallback>
+                          {createdBy.full_name
+                            .split(' ')
+                            .map((n) => n[0])
+                            .join('')}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{createdBy.full_name}</p>
+                        <p className="text-xs text-muted-foreground">{createdBy.email}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-muted-foreground">Unknown</p>
                   )}
                 </div>
 
