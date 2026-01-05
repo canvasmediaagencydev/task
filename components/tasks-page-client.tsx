@@ -32,7 +32,7 @@ export function TasksPageClient({ initialTasks, currentUserId }: TasksPageClient
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilters, setStatusFilters] = useState<TaskStatus[]>([]);
   const [priorityFilters, setPriorityFilters] = useState<TaskPriority[]>([]);
-  const [roleFilter, setRoleFilter] = useState<'all' | 'assigned' | 'reviewing'>('all');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'assigned' | 'reviewing' | 'my_tasks'>('all');
 
   const handleViewTask = (task: Task) => {
     router.push(`/dashboard/tasks/${task.id}`);
@@ -69,6 +69,11 @@ export function TasksPageClient({ initialTasks, currentUserId }: TasksPageClient
       );
     } else if (roleFilter === 'reviewing' && currentUserId) {
       filtered = filtered.filter((task) =>
+        task.reviewers?.some(r => r?.id === currentUserId)
+      );
+    } else if (roleFilter === 'my_tasks' && currentUserId) {
+      filtered = filtered.filter((task) =>
+        task.assignees?.some(a => a?.id === currentUserId) ||
         task.reviewers?.some(r => r?.id === currentUserId)
       );
     }
@@ -211,6 +216,12 @@ export function TasksPageClient({ initialTasks, currentUserId }: TasksPageClient
                 onCheckedChange={() => setRoleFilter('all')}
               >
                 All Tasks
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={roleFilter === 'my_tasks'}
+                onCheckedChange={() => setRoleFilter('my_tasks')}
+              >
+                My Tasks (Assigned or Reviewing)
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
                 checked={roleFilter === 'assigned'}
