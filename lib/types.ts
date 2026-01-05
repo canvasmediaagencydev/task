@@ -9,7 +9,7 @@ export type TaskStatus =
 
 export type TaskPriority = 'low' | 'normal' | 'high' | 'urgent';
 
-export type TaskType = 'content' | 'graphic' | 'review' | 'posting' | 'other';
+export type TaskType = 'content' | 'graphic' | 'review' | 'posting' | 'vdo' | 'report' | 'motion' | 'other';
 
 export type ProjectStatus = 'active' | 'on_hold' | 'done';
 
@@ -76,6 +76,7 @@ export interface Task {
   assignees?: User[];  // Changed from assignee to assignees (array)
   reviewers?: User[];  // Changed from reviewer to reviewers (array)
   due_date?: string;
+  month?: string;  // Month/year that this task belongs to (format: YYYY-MM-DD, first day of month)
   completed_at?: string;
   created_by: User;
   created_at: string;

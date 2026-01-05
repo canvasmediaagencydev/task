@@ -41,6 +41,7 @@ export function EditTaskForm({ task, users }: EditTaskFormProps) {
     status: task.status as TaskStatus,
     priority: task.priority as TaskPriority,
     due_date: task.due_date || '',
+    month: task.month ? task.month.substring(0, 7) : '',  // Convert YYYY-MM-DD to YYYY-MM
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -59,6 +60,7 @@ export function EditTaskForm({ task, users }: EditTaskFormProps) {
         status: formData.status,
         priority: formData.priority,
         due_date: formData.due_date || null,
+        month: formData.month ? `${formData.month}-01` : null,
         assignee_ids: assigneeIds,
         reviewer_ids: reviewerIds,
       });
@@ -135,6 +137,9 @@ export function EditTaskForm({ task, users }: EditTaskFormProps) {
                   <SelectItem value="content">Content</SelectItem>
                   <SelectItem value="posting">Posting</SelectItem>
                   <SelectItem value="review">Review</SelectItem>
+                  <SelectItem value="vdo">VDO</SelectItem>
+                  <SelectItem value="report">Report</SelectItem>
+                  <SelectItem value="motion">Motion</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
@@ -193,6 +198,19 @@ export function EditTaskForm({ task, users }: EditTaskFormProps) {
                 value={formData.due_date}
                 onChange={(e) =>
                   setFormData({ ...formData, due_date: e.target.value })
+                }
+                disabled={isPending}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="month">Month</Label>
+              <Input
+                id="month"
+                type="month"
+                value={formData.month}
+                onChange={(e) =>
+                  setFormData({ ...formData, month: e.target.value })
                 }
                 disabled={isPending}
               />

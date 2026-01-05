@@ -65,6 +65,9 @@ export function getTypeColor(type: TaskType): string {
     graphic: 'bg-pink-100 text-pink-600 dark:bg-pink-900 dark:text-pink-400',
     review: 'bg-cyan-100 text-cyan-600 dark:bg-cyan-900 dark:text-cyan-400',
     posting: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400',
+    vdo: 'bg-amber-100 text-amber-600 dark:bg-amber-900 dark:text-amber-400',
+    report: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400',
+    motion: 'bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-400',
     other: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
   };
   return colors[type];
@@ -76,6 +79,9 @@ export function getTypeLabel(type: TaskType): string {
     graphic: 'Graphic',
     review: 'Review',
     posting: 'Posting',
+    vdo: 'VDO',
+    report: 'Report',
+    motion: 'Motion',
     other: 'Other',
   };
   return labels[type];

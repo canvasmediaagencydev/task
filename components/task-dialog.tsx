@@ -26,6 +26,7 @@ export function TaskDialog({ open, onOpenChange, task, onSave }: TaskDialogProps
     status: task?.status || 'backlog' as TaskStatus,
     priority: task?.priority || 'normal' as TaskPriority,
     due_date: task?.due_date ? new Date(task.due_date).toISOString().split('T')[0] : '',
+    month: task?.month ? task.month.substring(0, 7) : '',  // Convert YYYY-MM-DD to YYYY-MM
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,6 +42,7 @@ export function TaskDialog({ open, onOpenChange, task, onSave }: TaskDialogProps
       await onSave({
         ...formData,
         due_date: formData.due_date ? new Date(formData.due_date).toISOString() : undefined,
+        month: formData.month ? `${formData.month}-01` : undefined,
       });
 
       toast.success(task ? 'Task updated successfully' : 'Task created successfully');
@@ -55,6 +57,7 @@ export function TaskDialog({ open, onOpenChange, task, onSave }: TaskDialogProps
           status: 'backlog',
           priority: 'normal',
           due_date: '',
+          month: '',
         });
       }
     } catch {
@@ -113,6 +116,9 @@ export function TaskDialog({ open, onOpenChange, task, onSave }: TaskDialogProps
                     <SelectItem value="graphic">Graphic</SelectItem>
                     <SelectItem value="review">Review</SelectItem>
                     <SelectItem value="posting">Posting</SelectItem>
+                    <SelectItem value="vdo">VDO</SelectItem>
+                    <SelectItem value="report">Report</SelectItem>
+                    <SelectItem value="motion">Motion</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
@@ -168,6 +174,16 @@ export function TaskDialog({ open, onOpenChange, task, onSave }: TaskDialogProps
                   onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
                 />
               </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="month">Month</Label>
+              <Input
+                id="month"
+                type="month"
+                value={formData.month}
+                onChange={(e) => setFormData({ ...formData, month: e.target.value })}
+              />
             </div>
           </div>
 

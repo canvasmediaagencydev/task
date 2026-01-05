@@ -37,6 +37,7 @@ export async function createTask(data: {
   status: TaskStatus;
   priority: TaskPriority;
   due_date?: string | null;
+  month?: string | null;
   assignee_id?: string | null;
   assignee_ids?: string[];
   reviewer_ids?: string[];
@@ -64,6 +65,7 @@ export async function createTask(data: {
     status: data.status,
     priority: data.priority,
     due_date: data.due_date || null,
+    month: data.month || null,
     assignee_id: data.assignee_id || null,
     project_id: data.project_id || null,
     created_by: user.id,
@@ -145,6 +147,7 @@ export async function updateTask(taskId: string, data: {
   status?: TaskStatus;
   priority?: TaskPriority;
   due_date?: string | null;
+  month?: string | null;
   assignee_id?: string | null;
   assignee_ids?: string[];
   reviewer_ids?: string[];
@@ -161,6 +164,7 @@ export async function updateTask(taskId: string, data: {
     status: data.status,
     priority: data.priority,
     due_date: data.due_date,
+    month: data.month,
     assignee_id: data.assignee_id,
     project_id: data.project_id,
     updated_at: new Date().toISOString(),

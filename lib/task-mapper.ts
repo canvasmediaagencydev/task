@@ -136,6 +136,7 @@ export function mapTaskRowToTask(
     assignees,
     reviewers,
     due_date: row.due_date ?? undefined,
+    month: row.month ?? undefined,
     completed_at: row.completed_at ?? undefined,
     created_by: createdBy,
     created_at: row.created_at ?? new Date().toISOString(),

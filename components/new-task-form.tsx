@@ -51,6 +51,7 @@ export function NewTaskForm({ users, projects, initialProjectId }: NewTaskFormPr
     status: 'backlog' as TaskStatus,
     priority: 'normal' as TaskPriority,
     due_date: '',
+    month: '',
     project_id: initialProjectId || '',
   });
 
@@ -75,6 +76,7 @@ export function NewTaskForm({ users, projects, initialProjectId }: NewTaskFormPr
         status: formData.status,
         priority: formData.priority,
         due_date: formData.due_date || null,
+        month: formData.month ? `${formData.month}-01` : null,
         project_id: formData.project_id,
         assignee_ids: assigneeIds,
         reviewer_ids: reviewerIds,
@@ -189,6 +191,9 @@ export function NewTaskForm({ users, projects, initialProjectId }: NewTaskFormPr
                   <SelectItem value="content">Content</SelectItem>
                   <SelectItem value="posting">Posting</SelectItem>
                   <SelectItem value="review">Review</SelectItem>
+                  <SelectItem value="vdo">VDO</SelectItem>
+                  <SelectItem value="report">Report</SelectItem>
+                  <SelectItem value="motion">Motion</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
@@ -245,6 +250,18 @@ export function NewTaskForm({ users, projects, initialProjectId }: NewTaskFormPr
                 value={formData.due_date}
                 onChange={(e) =>
                   setFormData({ ...formData, due_date: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="month">Month</Label>
+              <Input
+                id="month"
+                type="month"
+                value={formData.month}
+                onChange={(e) =>
+                  setFormData({ ...formData, month: e.target.value })
                 }
               />
             </div>

@@ -656,6 +656,7 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          month: string | null
           parent_task_id: string | null
           priority: string | null
           project_id: string | null
@@ -674,6 +675,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          month?: string | null
           parent_task_id?: string | null
           priority?: string | null
           project_id?: string | null
@@ -692,6 +694,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          month?: string | null
           parent_task_id?: string | null
           priority?: string | null
           project_id?: string | null
