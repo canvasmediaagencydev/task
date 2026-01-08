@@ -15,14 +15,41 @@ export async function createComment(taskId: string, comment: string) {
       return { success: false, error: 'Unauthorized' };
     }
 
-    // Verify user has access to this task (assignee or creator)
+    // Verify user has access to this task (assignee, reviewer, or creator)
     const { data: task } = await supabase
       .from('tasks')
-      .select('assignee_id, created_by')
+      .select('assignee_id, reviewer_id, created_by')
       .eq('id', taskId)
       .single();
 
-    if (!task || (task.assignee_id !== user.id && task.created_by !== user.id)) {
+    if (!task) {
+      return { success: false, error: 'Task not found' };
+    }
+
+    // Check if user is assignee, reviewer, creator, or in junction tables
+    const isAssignee = task.assignee_id === user.id;
+    const isReviewer = task.reviewer_id === user.id;
+    const isCreator = task.created_by === user.id;
+
+    // Check junction tables
+    const { data: assigneeData } = await supabase
+      .from('task_assignees')
+      .select('user_id')
+      .eq('task_id', taskId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const { data: reviewerData } = await supabase
+      .from('task_reviewers')
+      .select('user_id')
+      .eq('task_id', taskId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const isInAssignees = !!assigneeData;
+    const isInReviewers = !!reviewerData;
+
+    if (!isAssignee && !isReviewer && !isCreator && !isInAssignees && !isInReviewers) {
       return { success: false, error: 'Access denied' };
     }
 
