@@ -11,7 +11,7 @@ export async function fetchTasks(): Promise<Task[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
-  // Query user_visible_tasks view (returns same structure as tasks table)
+  // Query user_visible_tasks view (now without auth.uid() filter)
   // Type cast to 'any' to avoid TypeScript depth errors with views
   const { data: tasksData, error } = await (supabase
     .from('user_visible_tasks' as any)
@@ -36,7 +36,18 @@ export async function fetchTasks(): Promise<Task[]> {
     return [];
   }
 
-  const taskRows = (tasksData || []) as TaskRowWithRelations[];
+  // Filter tasks where user is involved (assignee, reviewer, or creator)
+  const filteredTasks = (tasksData || []).filter((task: any) => {
+    return (
+      task.assignee_id === user.id ||
+      task.reviewer_id === user.id ||
+      task.created_by === user.id ||
+      (task.assignee_user_ids && task.assignee_user_ids.includes(user.id)) ||
+      (task.reviewer_user_ids && task.reviewer_user_ids.includes(user.id))
+    );
+  });
+
+  const taskRows = filteredTasks as TaskRowWithRelations[];
   return taskRows.map((task) => mapTaskRowToTask(task));
 }
 
@@ -62,6 +73,11 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
       id,
       status,
       due_date,
+      assignee_id,
+      reviewer_id,
+      created_by,
+      assignee_user_ids,
+      reviewer_user_ids,
       project:projects(id, status)
     `) as any);
 
@@ -77,9 +93,21 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
 
   type TaskWithProjectStatus = Database['public']['Tables']['tasks']['Row'] & {
     project: Pick<Database['public']['Tables']['projects']['Row'], 'id' | 'status'> | null;
+    assignee_user_ids?: string[];
+    reviewer_user_ids?: string[];
   };
 
-  const tasks = (tasksData || []) as TaskWithProjectStatus[];
+  // Filter tasks where user is involved
+  const allTasks = (tasksData || []) as TaskWithProjectStatus[];
+  const tasks = allTasks.filter((task: any) => {
+    return (
+      task.assignee_id === user.id ||
+      task.reviewer_id === user.id ||
+      task.created_by === user.id ||
+      (task.assignee_user_ids && task.assignee_user_ids.includes(user.id)) ||
+      (task.reviewer_user_ids && task.reviewer_user_ids.includes(user.id))
+    );
+  });
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter((task) => task.status === 'done').length;
   const now = new Date().toISOString();
@@ -129,14 +157,25 @@ export async function fetchTaskStatusCounts(): Promise<TaskStatusCount[]> {
 
   const { data, error } = await (supabase
     .from('user_visible_tasks' as any)
-    .select('status') as any);
+    .select('status, assignee_id, reviewer_id, created_by, assignee_user_ids, reviewer_user_ids') as any);
 
   if (error) {
     console.error('Error fetching task status counts:', error);
     return statuses.map((status) => ({ status, count: 0 }));
   }
 
-  const statusTotals = (data || []).reduce((acc: Record<TaskStatus, number>, task: any) => {
+  // Filter tasks where user is involved
+  const filteredData = (data || []).filter((task: any) => {
+    return (
+      task.assignee_id === user.id ||
+      task.reviewer_id === user.id ||
+      task.created_by === user.id ||
+      (task.assignee_user_ids && task.assignee_user_ids.includes(user.id)) ||
+      (task.reviewer_user_ids && task.reviewer_user_ids.includes(user.id))
+    );
+  });
+
+  const statusTotals = filteredData.reduce((acc: Record<TaskStatus, number>, task: any) => {
     const status = (task.status as TaskStatus) ?? 'backlog';
     acc[status] = (acc[status] || 0) + 1;
     return acc;
@@ -158,14 +197,25 @@ export async function fetchRecentActivities(): Promise<Activity[]> {
 
   const { data: userTasks, error: tasksError } = await (supabase
     .from('user_visible_tasks' as any)
-    .select('id') as any);
+    .select('id, assignee_id, reviewer_id, created_by, assignee_user_ids, reviewer_user_ids') as any);
 
   if (tasksError) {
     console.error('Error fetching user tasks for activities:', tasksError);
     return [];
   }
 
-  const taskIds = (userTasks || []).map((task: any) => task.id).filter(Boolean);
+  // Filter tasks where user is involved
+  const filteredTasks = (userTasks || []).filter((task: any) => {
+    return (
+      task.assignee_id === user.id ||
+      task.reviewer_id === user.id ||
+      task.created_by === user.id ||
+      (task.assignee_user_ids && task.assignee_user_ids.includes(user.id)) ||
+      (task.reviewer_user_ids && task.reviewer_user_ids.includes(user.id))
+    );
+  });
+
+  const taskIds = filteredTasks.map((task: any) => task.id).filter(Boolean);
   const orFilters = [`created_by.eq.${user.id}`];
 
   if (taskIds.length > 0) {
