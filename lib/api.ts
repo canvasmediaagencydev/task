@@ -11,7 +11,7 @@ export async function fetchTasks(): Promise<Task[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
-  // Query user_visible_tasks view (now without auth.uid() filter)
+  // Query user_visible_tasks view
   // Type cast to 'any' to avoid TypeScript depth errors with views
   const { data: tasksData, error } = await (supabase
     .from('user_visible_tasks' as any)
@@ -47,7 +47,38 @@ export async function fetchTasks(): Promise<Task[]> {
     );
   });
 
-  const taskRows = filteredTasks as TaskRowWithRelations[];
+  // Fetch user_task_positions for current user
+  const { data: positions } = await supabase
+    .from('user_task_positions')
+    .select('task_id, position')
+    .eq('user_id', user.id);
+
+  // Create position map for quick lookup
+  const positionMap = new Map<string, number>();
+  (positions || []).forEach((pos) => {
+    positionMap.set(pos.task_id, pos.position);
+  });
+
+  // Sort by user position per status, fallback to created_at
+  const sortedTasks = filteredTasks.sort((a: any, b: any) => {
+    // Group by status first
+    if (a.status !== b.status) {
+      return 0; // Keep status grouping from existing sort
+    }
+
+    // Within same status, sort by position
+    const posA = positionMap.get(a.id) ?? 999999;
+    const posB = positionMap.get(b.id) ?? 999999;
+
+    if (posA !== posB) {
+      return posA - posB; // Lower position comes first
+    }
+
+    // Fallback to created_at
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
+  const taskRows = sortedTasks as TaskRowWithRelations[];
   return taskRows.map((task) => mapTaskRowToTask(task));
 }
 

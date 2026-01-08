@@ -24,8 +24,10 @@ export async function updateTaskStatus(taskId: string, status: TaskStatus) {
     return { error: error.message };
   }
 
-  // Revalidate the tasks page to reflect changes
-  revalidatePath('/dashboard/tasks');
+  // Revalidate the tasks page and all related paths
+  revalidatePath('/dashboard/tasks', 'page');
+  revalidatePath('/dashboard', 'page');
+  revalidatePath('/api/tasks', 'page');
 
   return { success: true };
 }
@@ -230,8 +232,10 @@ export async function updateTask(taskId: string, data: {
     }
   }
 
-  revalidatePath('/dashboard/tasks');
-  revalidatePath(`/dashboard/tasks/${taskId}`);
+  revalidatePath('/dashboard/tasks', 'page');
+  revalidatePath(`/dashboard/tasks/${taskId}`, 'page');
+  revalidatePath('/dashboard', 'page');
+  revalidatePath('/api/tasks', 'page');
 
   return { success: true };
 }
