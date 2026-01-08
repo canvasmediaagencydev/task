@@ -814,6 +814,55 @@ export type Database = {
           },
         ]
       }
+      user_task_positions: {
+        Row: {
+          created_at: string | null
+          id: string
+          position: number
+          task_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          position: number
+          task_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          position?: number
+          task_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_task_positions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_task_positions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "user_visible_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_task_positions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           avatar_url: string | null
@@ -914,16 +963,19 @@ export type Database = {
       user_visible_tasks: {
         Row: {
           assignee_id: string | null
+          assignee_user_ids: string[] | null
           completed_at: string | null
           created_at: string | null
           created_by: string | null
           description: string | null
           due_date: string | null
           id: string | null
+          month: string | null
           parent_task_id: string | null
           priority: string | null
           project_id: string | null
           reviewer_id: string | null
+          reviewer_user_ids: string[] | null
           status: string | null
           title: string | null
           type: string | null
