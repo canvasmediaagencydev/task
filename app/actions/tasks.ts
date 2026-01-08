@@ -255,3 +255,44 @@ export async function deleteTask(taskId: string) {
 
   return { success: true };
 }
+
+export async function reorderUserTasks(taskPositions: Array<{ task_id: string; position: number }>) {
+  await requirePageAccess('tasks');
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'Unauthorized' };
+  }
+
+  try {
+    // Upsert user task positions (batch update)
+    const { error } = await supabase
+      .from('user_task_positions')
+      .upsert(
+        taskPositions.map(({ task_id, position }) => ({
+          user_id: user.id,
+          task_id,
+          position,
+          updated_at: new Date().toISOString(),
+        })),
+        {
+          onConflict: 'user_id,task_id'
+        }
+      );
+
+    if (error) {
+      console.error('Error reordering tasks:', error);
+      return { error: error.message };
+    }
+
+    // Note: We don't revalidatePath here because this is called frequently during drag-and-drop
+    // The UI is updated optimistically, and real-time subscriptions will sync the state
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error in reorderUserTasks:', error);
+    return { error: 'Failed to reorder tasks' };
+  }
+}

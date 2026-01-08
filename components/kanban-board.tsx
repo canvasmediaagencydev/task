@@ -9,11 +9,13 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  closestCenter,
 } from '@dnd-kit/core';
+import { arrayMove } from '@dnd-kit/sortable';
 import { Task, TaskStatus } from '@/lib/types';
 import { KanbanColumn } from './kanban-column';
 import { TaskCard } from './task-card';
-import { updateTaskStatus } from '@/app/actions/tasks';
+import { updateTaskStatus, reorderUserTasks } from '@/app/actions/tasks';
 import { toast } from 'sonner';
 
 const columns: { id: TaskStatus; title: string }[] = [
@@ -69,6 +71,11 @@ export function KanbanBoard({ tasks, onEditTask, statusFilters = [], currentUser
     const taskId = active.id as string;
     const task = localTasks.find((t) => t.id === taskId);
 
+    if (!task) {
+      setActiveTask(null);
+      return;
+    }
+
     // Determine the new status - could be dropped on column or another task
     let newStatus: TaskStatus;
     const validStatuses: TaskStatus[] = ['backlog', 'in_progress', 'waiting_review', 'sent_client', 'feedback', 'approved', 'done'];
@@ -86,22 +93,72 @@ export function KanbanBoard({ tasks, onEditTask, statusFilters = [], currentUser
       newStatus = targetTask.status;
     }
 
-    // Skip if status hasn't changed
-    if (task && task.status === newStatus) {
+    // ============ NEW: Handle same-column reordering ============
+    const isSameColumn = task.status === newStatus;
+    const isDroppedOnTask = !validStatuses.includes(over.id as TaskStatus);
+
+    if (isSameColumn && isDroppedOnTask) {
+      // Reordering within the same column
+      const tasksInColumn = localTasks.filter((t) => t.status === task.status);
+      const oldIndex = tasksInColumn.findIndex((t) => t.id === active.id);
+      const newIndex = tasksInColumn.findIndex((t) => t.id === over.id);
+
+      // Skip if dropped on itself
+      if (oldIndex === newIndex) {
+        setActiveTask(null);
+        return;
+      }
+
+      // Reorder tasks within column using arrayMove
+      const reorderedColumnTasks = arrayMove(tasksInColumn, oldIndex, newIndex);
+
+      // Merge back into full task list
+      const otherTasks = localTasks.filter((t) => t.status !== task.status);
+      const newTaskList = [...otherTasks, ...reorderedColumnTasks];
+
+      // Optimistically update UI
+      setLocalTasks(newTaskList);
+      setActiveTask(null);
+
+      // Calculate position updates (100-based spacing for flexibility)
+      const positionUpdates = reorderedColumnTasks.map((t, index) => ({
+        task_id: t.id,
+        position: (index + 1) * 100,
+      }));
+
+      // Persist to database (non-blocking)
+      startTransition(async () => {
+        const result = await reorderUserTasks(positionUpdates);
+
+        if (result?.error) {
+          // Revert on error
+          setLocalTasks(localTasks);
+          toast.error('Failed to reorder tasks');
+        } else {
+          toast.success('Task order updated');
+        }
+      });
+
+      return; // Exit early, don't proceed to status change logic
+    }
+    // ============ END NEW CODE ============
+
+    // Skip if status hasn't changed (cross-column drop on same status)
+    if (task.status === newStatus) {
       setActiveTask(null);
       return;
     }
 
-    // Optimistically update UI
+    // Optimistically update UI for status change
     setLocalTasks((prev) =>
-      prev.map((task) =>
-        task.id === taskId ? { ...task, status: newStatus } : task
+      prev.map((t) =>
+        t.id === taskId ? { ...t, status: newStatus } : t
       )
     );
 
     setActiveTask(null);
 
-    // Update database
+    // Update database for status change
     startTransition(async () => {
       const result = await updateTaskStatus(taskId, newStatus);
 
@@ -132,6 +189,7 @@ export function KanbanBoard({ tasks, onEditTask, statusFilters = [], currentUser
   return (
     <DndContext
       sensors={sensors}
+      collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
