@@ -68,6 +68,8 @@ export function getTypeColor(type: TaskType): string {
     vdo: 'bg-amber-100 text-amber-600 dark:bg-amber-900 dark:text-amber-400',
     report: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400',
     motion: 'bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-400',
+    production_plan: 'bg-teal-100 text-teal-600 dark:bg-teal-900 dark:text-teal-400',
+    shooting: 'bg-rose-100 text-rose-600 dark:bg-rose-900 dark:text-rose-400',
     other: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
   };
   return colors[type];
@@ -82,6 +84,8 @@ export function getTypeLabel(type: TaskType): string {
     vdo: 'VDO',
     report: 'Report',
     motion: 'Motion',
+    production_plan: 'Production Plan',
+    shooting: 'Shooting',
     other: 'Other',
   };
   return labels[type];

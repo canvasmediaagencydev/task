@@ -119,6 +119,8 @@ export function TaskDialog({ open, onOpenChange, task, onSave }: TaskDialogProps
                     <SelectItem value="vdo">VDO</SelectItem>
                     <SelectItem value="report">Report</SelectItem>
                     <SelectItem value="motion">Motion</SelectItem>
+                    <SelectItem value="production_plan">Production Plan</SelectItem>
+                    <SelectItem value="shooting">Shooting</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>

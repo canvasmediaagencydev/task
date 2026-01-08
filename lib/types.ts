@@ -9,7 +9,7 @@ export type TaskStatus =
 
 export type TaskPriority = 'low' | 'normal' | 'high' | 'urgent';
 
-export type TaskType = 'content' | 'graphic' | 'review' | 'posting' | 'vdo' | 'report' | 'motion' | 'other';
+export type TaskType = 'content' | 'graphic' | 'review' | 'posting' | 'vdo' | 'report' | 'motion' | 'production_plan' | 'shooting' | 'other';
 
 export type ProjectStatus = 'active' | 'on_hold' | 'done';
 
