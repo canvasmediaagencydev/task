@@ -1,15 +1,19 @@
 "use client";
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition, useEffect, useRef, useCallback } from 'react';
 import {
   DndContext,
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
+  DragOverEvent,
   PointerSensor,
   useSensor,
   useSensors,
-  closestCenter,
+  pointerWithin,
+  rectIntersection,
+  CollisionDetection,
+  UniqueIdentifier,
 } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { Task, TaskStatus } from '@/lib/types';
@@ -35,13 +39,45 @@ interface KanbanBoardProps {
   currentUserId?: string;
 }
 
+// Custom collision detection for Kanban board
+// Prioritizes task collisions, then falls back to column collisions
+const customCollisionDetection: CollisionDetection = (args) => {
+  // First, try to find collisions with sortable items (tasks)
+  const pointerCollisions = pointerWithin(args);
+
+  if (pointerCollisions.length > 0) {
+    // Filter for task collisions (non-column IDs)
+    const validStatuses: TaskStatus[] = ['backlog', 'in_progress', 'waiting_review', 'sent_client', 'feedback', 'approved', 'done'];
+    const taskCollisions = pointerCollisions.filter(
+      collision => !validStatuses.includes(collision.id as TaskStatus)
+    );
+
+    if (taskCollisions.length > 0) {
+      return taskCollisions;
+    }
+
+    // Return column collisions if no task collisions
+    return pointerCollisions;
+  }
+
+  // Fallback to rect intersection for broader detection
+  return rectIntersection(args);
+};
+
 export function KanbanBoard({ tasks, onEditTask, statusFilters = [], currentUserId }: KanbanBoardProps) {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [localTasks, setLocalTasks] = useState(tasks);
   const [, startTransition] = useTransition();
+  const isDraggingRef = useRef(false);
+  const pendingUpdateRef = useRef<Task[] | null>(null);
 
-  // Sync localTasks with tasks prop when filters change
+  // Sync localTasks with tasks prop, but not during drag operations
   useEffect(() => {
+    if (isDraggingRef.current) {
+      // Store the update to apply after drag ends
+      pendingUpdateRef.current = tasks;
+      return;
+    }
     setLocalTasks(tasks);
   }, [tasks]);
 
@@ -54,24 +90,81 @@ export function KanbanBoard({ tasks, onEditTask, statusFilters = [], currentUser
   );
 
   const handleDragStart = (event: DragStartEvent) => {
+    isDraggingRef.current = true;
     const task = localTasks.find((t) => t.id === event.active.id);
     if (task) {
       setActiveTask(task);
     }
   };
 
+  // Find which column a task belongs to
+  const findColumn = useCallback((taskId: UniqueIdentifier): TaskStatus | null => {
+    const task = localTasks.find((t) => t.id === taskId);
+    return task?.status ?? null;
+  }, [localTasks]);
+
+  // Handle drag over for visual feedback during cross-column drag
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeId = active.id;
+    const overId = over.id;
+
+    const validStatuses: TaskStatus[] = ['backlog', 'in_progress', 'waiting_review', 'sent_client', 'feedback', 'approved', 'done'];
+
+    // Find the column of the active item
+    const activeColumn = findColumn(activeId);
+    if (!activeColumn) return;
+
+    // Determine over column
+    let overColumn: TaskStatus;
+    if (validStatuses.includes(overId as TaskStatus)) {
+      overColumn = overId as TaskStatus;
+    } else {
+      const foundColumn = findColumn(overId);
+      if (!foundColumn) return;
+      overColumn = foundColumn;
+    }
+
+    // If moving to a different column, update the task's status optimistically
+    if (activeColumn !== overColumn) {
+      setLocalTasks((prev) => {
+        const activeTask = prev.find((t) => t.id === activeId);
+        if (!activeTask) return prev;
+
+        // Move task to new column
+        const newTasks = prev.map((t) =>
+          t.id === activeId ? { ...t, status: overColumn } : t
+        );
+
+        return newTasks;
+      });
+    }
+  }, [findColumn]);
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
+    // Mark drag as ended
+    isDraggingRef.current = false;
+
     if (!over) {
       setActiveTask(null);
+      // Apply any pending updates that came during drag
+      if (pendingUpdateRef.current) {
+        setLocalTasks(pendingUpdateRef.current);
+        pendingUpdateRef.current = null;
+      }
       return;
     }
 
     const taskId = active.id as string;
+    // Get the original task from props (before any drag modifications)
+    const originalTask = tasks.find((t) => t.id === taskId);
     const task = localTasks.find((t) => t.id === taskId);
 
-    if (!task) {
+    if (!task || !originalTask) {
       setActiveTask(null);
       return;
     }
@@ -93,18 +186,19 @@ export function KanbanBoard({ tasks, onEditTask, statusFilters = [], currentUser
       newStatus = targetTask.status;
     }
 
-    // ============ NEW: Handle same-column reordering ============
-    const isSameColumn = task.status === newStatus;
+    // ============ Handle same-column reordering ============
+    // Use originalTask.status to compare against original position
+    const isSameColumn = originalTask.status === newStatus;
     const isDroppedOnTask = !validStatuses.includes(over.id as TaskStatus);
 
     if (isSameColumn && isDroppedOnTask) {
       // Reordering within the same column
-      const tasksInColumn = localTasks.filter((t) => t.status === task.status);
+      const tasksInColumn = localTasks.filter((t) => t.status === newStatus);
       const oldIndex = tasksInColumn.findIndex((t) => t.id === active.id);
       const newIndex = tasksInColumn.findIndex((t) => t.id === over.id);
 
-      // Skip if dropped on itself
-      if (oldIndex === newIndex) {
+      // Skip if dropped on itself or indices are invalid
+      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) {
         setActiveTask(null);
         return;
       }
@@ -112,8 +206,8 @@ export function KanbanBoard({ tasks, onEditTask, statusFilters = [], currentUser
       // Reorder tasks within column using arrayMove
       const reorderedColumnTasks = arrayMove(tasksInColumn, oldIndex, newIndex);
 
-      // Merge back into full task list
-      const otherTasks = localTasks.filter((t) => t.status !== task.status);
+      // Merge back into full task list while preserving order
+      const otherTasks = localTasks.filter((t) => t.status !== newStatus);
       const newTaskList = [...otherTasks, ...reorderedColumnTasks];
 
       // Optimistically update UI
@@ -131,8 +225,8 @@ export function KanbanBoard({ tasks, onEditTask, statusFilters = [], currentUser
         const result = await reorderUserTasks(positionUpdates);
 
         if (result?.error) {
-          // Revert on error
-          setLocalTasks(localTasks);
+          // Revert on error - use original tasks from props
+          setLocalTasks(tasks);
           toast.error('Failed to reorder tasks');
         } else {
           toast.success('Task order updated');
@@ -141,21 +235,16 @@ export function KanbanBoard({ tasks, onEditTask, statusFilters = [], currentUser
 
       return; // Exit early, don't proceed to status change logic
     }
-    // ============ END NEW CODE ============
+    // ============ END same-column reordering ============
 
-    // Skip if status hasn't changed (cross-column drop on same status)
-    if (task.status === newStatus) {
+    // ============ Handle cross-column status change ============
+    // Skip if status hasn't changed from original
+    if (originalTask.status === newStatus) {
       setActiveTask(null);
       return;
     }
 
-    // Optimistically update UI for status change
-    setLocalTasks((prev) =>
-      prev.map((t) =>
-        t.id === taskId ? { ...t, status: newStatus } : t
-      )
-    );
-
+    // UI already updated during onDragOver, just persist to database
     setActiveTask(null);
 
     // Update database for status change
@@ -163,10 +252,10 @@ export function KanbanBoard({ tasks, onEditTask, statusFilters = [], currentUser
       const result = await updateTaskStatus(taskId, newStatus);
 
       if (result.error) {
-        // Revert on error
+        // Revert on error - restore original status
         setLocalTasks((prev) =>
           prev.map((t) =>
-            t.id === taskId ? { ...t, status: task!.status } : t
+            t.id === taskId ? { ...t, status: originalTask.status } : t
           )
         );
 
@@ -189,8 +278,9 @@ export function KanbanBoard({ tasks, onEditTask, statusFilters = [], currentUser
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={customCollisionDetection}
       onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
       <div className="flex gap-4 overflow-x-auto pb-4">

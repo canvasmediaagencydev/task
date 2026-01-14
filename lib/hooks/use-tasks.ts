@@ -73,8 +73,26 @@ export function useTasks() {
         )
         .subscribe();
 
+      // Subscribe to user_task_positions for position changes (reordering)
+      const positionsChannel = supabase
+        .channel(`positions:${userId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'user_task_positions',
+            filter: `user_id=eq.${userId}`,
+          },
+          () => {
+            void loadTasks({ silent: true });
+          }
+        )
+        .subscribe();
+
       return () => {
         supabase.removeChannel(channel);
+        supabase.removeChannel(positionsChannel);
       };
     },
     [loadTasks]
