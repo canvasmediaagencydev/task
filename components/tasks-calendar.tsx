@@ -4,9 +4,15 @@ import { useState } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday } from 'date-fns';
 import { Task } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getStatusColor } from '@/lib/format';
+import { getStatusColor, getPriorityColor } from '@/lib/format';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface TasksCalendarProps {
   tasks: Task[];
@@ -15,6 +21,8 @@ interface TasksCalendarProps {
 
 export function TasksCalendar({ tasks, onEditTask }: TasksCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -33,6 +41,13 @@ export function TasksCalendar({ tasks, onEditTask }: TasksCalendarProps) {
   const nextMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
+
+  const openDayDialog = (date: Date) => {
+    setSelectedDate(date);
+    setIsDialogOpen(true);
+  };
+
+  const selectedDateTasks = selectedDate ? getTasksForDate(selectedDate) : [];
 
   return (
     <div className="space-y-4">
@@ -104,15 +119,76 @@ export function TasksCalendar({ tasks, onEditTask }: TasksCalendarProps) {
                 ))}
 
                 {dayTasks.length > 3 && (
-                  <div className="text-xs text-muted-foreground">
+                  <button
+                    className="text-xs text-primary hover:underline cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openDayDialog(date);
+                    }}
+                  >
                     +{dayTasks.length - 3} more
-                  </div>
+                  </button>
                 )}
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* Dialog to show all tasks for a selected date */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>
+              Tasks for {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : ''}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+            {selectedDateTasks.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No tasks for this date</p>
+            ) : (
+              selectedDateTasks.map((task) => (
+                <div
+                  key={task.id}
+                  className="p-3 rounded-lg border bg-card hover:bg-accent cursor-pointer transition-colors"
+                  onClick={() => {
+                    setIsDialogOpen(false);
+                    onEditTask?.(task);
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <h4 className="font-medium text-sm line-clamp-2">{task.title}</h4>
+                    <span className={cn(
+                      'shrink-0 text-xs px-2 py-0.5 rounded',
+                      getPriorityColor(task.priority)
+                    )}>
+                      {task.priority}
+                    </span>
+                  </div>
+                  {task.description && (
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                      {task.description}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className={cn(
+                      'text-xs px-2 py-0.5 rounded',
+                      getStatusColor(task.status)
+                    )}>
+                      {task.status.replace('_', ' ')}
+                    </span>
+                    {task.project && (
+                      <span className="text-xs text-muted-foreground">
+                        {task.project.name}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
